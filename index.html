@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hyperbolic Tree & Arc Diagram</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Hyperbolic Tree & Arc Diagram</h1>
+      <nav>
+        <button id="showTree">Hyperbolic Tree</button>
+        <button id="showArc">Arc Diagram</button>
+      </nav>
+    </header>
+
+    <main>
+      <div id="viz"></div>
+    </main>
+
+    <script type="module">
+      import { drawHyperbolicTree } from "./js/hyperbolicTree.js";
+      import { drawArcDiagram } from "./js/arcDiagram.js";
+
+      const vizContainer = document.getElementById("viz");
+
+      document.getElementById("showTree").addEventListener("click", () => {
+        vizContainer.innerHTML = "";
+        drawHyperbolicTree("#viz");
+      });
+
+      document.getElementById("showArc").addEventListener("click", () => {
+        vizContainer.innerHTML = "";
+        drawArcDiagram("#viz");
+      });
+
+      // default view
+      drawHyperbolicTree("#viz");
+    </script>
+  </body>
+</html>
+

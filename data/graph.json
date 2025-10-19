@@ -1,0 +1,27 @@
+{
+  "name": "root",
+  "children": [
+    {
+      "name": "Group A",
+      "children": [
+        { "name": "A1" },
+        { "name": "A2" },
+        { "name": "A3" }
+      ]
+    },
+    {
+      "name": "Group B",
+      "children": [
+        { "name": "B1" },
+        {
+          "name": "B2",
+          "children": [
+            { "name": "B2.1" },
+            { "name": "B2.2" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
