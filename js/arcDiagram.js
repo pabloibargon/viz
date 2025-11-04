@@ -6,7 +6,7 @@ async function ensureTradeTable(conn, db) {
   const names = tables.toArray().map(r => r.name);
 
   if (!names.includes("trade_data")) {
-    const resp = await fetch("/data/trade_data.parquet");
+    const resp = await fetch("data/trade_data.parquet");
     if (!resp.ok) throw new Error("Failed to fetch trade_data.parquet");
     const buffer = await resp.arrayBuffer();
 

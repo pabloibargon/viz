@@ -4,7 +4,7 @@ async function ensureTaxonomyTable(conn, db) {
   const names = tables.toArray().map(r => r.name);
   console.log(names);
   if (!names.includes("taxonomy")) {
-    const resp = await fetch("/data/taxonomy.parquet");
+    const resp = await fetch("data/taxonomy.parquet");
     if (!resp.ok) {
       throw new Error("Failed to fetch taxonomy.parquet: " + resp.status);
     }
