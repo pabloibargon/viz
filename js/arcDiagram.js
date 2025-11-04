@@ -57,8 +57,8 @@ export async function renderArcDiagram(containerSelector, data, year, selectedCo
   container.selectAll("*").remove();
 
   const width = 800;
-  const height = 500;
-  const margin = { top: 20, right: 30, bottom: 200, left: 30 };
+  const height = 400;
+  const margin = { top: 20, right: 30, bottom: 50, left: 30 };
   const baseline = height - margin.bottom;
   const nodeRadius = 6;
 
