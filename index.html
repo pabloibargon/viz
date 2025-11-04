@@ -5,6 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hyperbolic Tree & Arc Diagram</title>
     <link rel="stylesheet" href="style.css" />
+    <link href="d3-hypertree-light.css" rel="stylesheet">
+    <script src="d3-hypertree.js"></script>
+    <script type="module">
+      import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/+esm";
+      import { drawHyperbolicTree } from "./js/hyperbolicTree.js";
+      import { drawArcDiagram } from "./js/arcDiagram.js";
+    
+      const MANUAL_BUNDLES = {
+        mvp: {
+          mainModule: "/duckdb/duckdb-mvp.wasm",
+          mainWorker: "/duckdb/duckdb-browser-mvp.worker.js",
+        },
+        eh: {
+          mainModule: "/duckdb/duckdb-eh.wasm",
+          mainWorker: "/duckdb/duckdb-browser-eh.worker.js",
+        },
+      };
+    
+      const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+      const worker = new Worker(bundle.mainWorker);
+      const logger = new duckdb.ConsoleLogger();
+      const db = new duckdb.AsyncDuckDB(logger, worker);
+      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+      const conn = await db.connect();
+    
+      window.duckdb_conn = conn;
+      window.duckdb_db = db;
+    
+      const vizContainer = document.getElementById("viz");
+      const hytContent = document.getElementById("hyt-content");
+      const arcContent = document.getElementById("arc-content");
+    
+      const uid = 805080;
+      const depth = 10;
+    
+      function showTree() {
+        vizContainer.innerHTML = "";
+        drawHyperbolicTree("#viz", uid, depth);
+        hytContent.style.display = "block";
+        arcContent.style.display = "none";
+      }
+    
+      function showArc() {
+        vizContainer.innerHTML = "";
+        drawArcDiagram("#viz", conn);
+        hytContent.style.display = "none";
+        arcContent.style.display = "block";
+      }
+    
+      document.getElementById("showTree").addEventListener("click", showTree);
+      document.getElementById("showArc").addEventListener("click", showArc);
+    
+      // Default view
+      showTree();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
   </head>
   <body>
@@ -17,28 +72,18 @@
     </header>
 
     <main>
-      <div id="viz"></div>
+      <div id="hyt-content">
+      <h1 id="header">Tree of life </h1>
+      <p style="width:800px"> Esta visualización está basada en el proyecto <a href="https://opentreeoflife.org/">opentreeoflife</a>,los datos han sido obtenidos de ese mismo proyecto, concretamente <a href="https://tree.opentreeoflife.org/about/taxonomy-version/ott3.7.2">aquí</a>. La librería utilizada es también la misma que la utilizada por este proyecto <code>d3-hypertree.js</code>.</p>
+      <h2>Diferencias con opentreeoflife</h2>
+      <p style="width:800px">Se sirven <emph>todos</emph> los datos en un fichero <b>parquet</b> que luego se consulta dinámicamente desde el navegador usando <b>duckdb-wasm</b>. De esta
+      manera podemos hacer que al hacer click se regenere el árbol centrado en el nodo elegido. Se podría utilizar esta tecnología para hacer cualquier tipo de consulta en el navegador y permitir mayor exploración al usuario.</p>
+      </div>
+      <div id="arc-content" style="hidden">
+      <p> Datos obtenidos de <a href="https://data.europa.eu/data/datasets/mhouwtwjuyx7f1ozofbw?">data.europa.eu</a>.
+      </div>
+      <div id="viz" style="width:800px; height:800px; position:relative;"></div>
     </main>
-
-    <script type="module">
-      import { drawHyperbolicTree } from "./js/hyperbolicTree.js";
-      import { drawArcDiagram } from "./js/arcDiagram.js";
-
-      const vizContainer = document.getElementById("viz");
-
-      document.getElementById("showTree").addEventListener("click", () => {
-        vizContainer.innerHTML = "";
-        drawHyperbolicTree("#viz");
-      });
-
-      document.getElementById("showArc").addEventListener("click", () => {
-        vizContainer.innerHTML = "";
-        drawArcDiagram("#viz");
-      });
-
-      // default view
-      drawHyperbolicTree("#viz");
-    </script>
   </body>
 </html>
 

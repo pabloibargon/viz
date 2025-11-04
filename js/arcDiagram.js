@@ -1,6 +1,9 @@
 export function drawArcDiagram(containerSelector) {
-  const width = 800;
-  const height = 400;
+  const container = d3.select(containerSelector);
+  const width = container.node().clientWidth || 800;
+  const baseHeight = 200; // minimum height for nodes
+  const nodeSpacing = 50; // horizontal spacing padding
+  const nodeRadius = 6;
 
   const nodes = [
     { id: "A" },
@@ -19,16 +22,26 @@ export function drawArcDiagram(containerSelector) {
     { source: "E", target: "F" }
   ];
 
-  const svg = d3
-    .select(containerSelector)
-    .append("svg")
-    .attr("viewBox", [0, 0, width, height])
-    .style("font", "10px sans-serif");
+  // Clear previous content
+  container.selectAll("*").remove();
 
   const x = d3
     .scalePoint()
     .domain(nodes.map((d) => d.id))
-    .range([50, width - 50]);
+    .range([nodeSpacing, width - nodeSpacing])
+    .padding(0.5);
+
+  // Compute max arc radius to dynamically adjust baseline
+  const maxRadius = d3.max(links, (d) => Math.abs(x(d.target) - x(d.source)) / 2);
+
+  const baseline = baseHeight + maxRadius + nodeRadius; // dynamic baseline
+  const totalHeight = baseline + nodeRadius + 40; // extra bottom space
+
+  const svg = container
+    .append("svg")
+    .attr("width", width)
+    .attr("height", totalHeight)
+    .style("font", "10px sans-serif");
 
   // Draw arcs
   svg
@@ -43,8 +56,7 @@ export function drawArcDiagram(containerSelector) {
       const start = x(d.source);
       const end = x(d.target);
       const radius = Math.abs(end - start) / 2;
-      const arcPath = `M${start},${height / 2} A${radius},${radius} 0 0,1 ${end},${height / 2}`;
-      return arcPath;
+      return `M${start},${baseline} A${radius},${radius} 0 0,1 ${end},${baseline}`;
     });
 
   // Draw nodes
@@ -54,8 +66,8 @@ export function drawArcDiagram(containerSelector) {
     .data(nodes)
     .join("circle")
     .attr("cx", (d) => x(d.id))
-    .attr("cy", height / 2)
-    .attr("r", 6)
+    .attr("cy", baseline)
+    .attr("r", nodeRadius)
     .attr("fill", "#1f77b4")
     .on("mouseover", function () {
       d3.select(this).attr("fill", "orange");
@@ -64,14 +76,14 @@ export function drawArcDiagram(containerSelector) {
       d3.select(this).attr("fill", "#1f77b4");
     });
 
+  // Draw labels
   svg
     .append("g")
     .selectAll("text")
     .data(nodes)
     .join("text")
     .attr("x", (d) => x(d.id))
-    .attr("y", height / 2 + 20)
+    .attr("y", baseline + 20)
     .attr("text-anchor", "middle")
     .text((d) => d.id);
 }
-

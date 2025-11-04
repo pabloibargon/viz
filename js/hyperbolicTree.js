@@ -1,72 +1,103 @@
-export function drawHyperbolicTree(containerSelector) {
-  const width = 800;
-  const radius = width / 2;
-
-  const tree = d3
-    .tree()
-    .size([2 * Math.PI, radius - 100])
-    .separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth);
-
-  d3.json("./data/graph.json").then((data) => {
-    const root = tree(d3.hierarchy(data));
-
-    const svg = d3
-      .select(containerSelector)
-      .append("svg")
-      .attr("viewBox", [-width / 2, -width / 2, width, width])
-      .style("font", "10px sans-serif");
-
-    const link = svg
-      .append("g")
-      .attr("fill", "none")
-      .attr("stroke", "#ccc")
-      .selectAll("path")
-      .data(root.links())
-      .join("path")
-      .attr(
-        "d",
-        d3
-          .linkRadial()
-          .angle((d) => d.x)
-          .radius((d) => d.y)
-      );
-
-    const node = svg
-      .append("g")
-      .selectAll("circle")
-      .data(root.descendants())
-      .join("circle")
-      .attr(
-        "transform",
-        (d) => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y},0)`
-      )
-      .attr("r", 4)
-      .attr("fill", (d) => (d.children ? "#555" : "#999"))
-      .on("mouseover", function () {
-        d3.select(this).attr("fill", "orange");
-      })
-      .on("mouseout", function (d) {
-        d3.select(this).attr("fill", (d) => (d.children ? "#555" : "#999"));
-      });
-
-    svg
-      .append("g")
-      .attr("stroke-linejoin", "round")
-      .attr("stroke-width", 0.5)
-      .selectAll("text")
-      .data(root.descendants())
-      .join("text")
-      .attr(
-        "transform",
-        (d) =>
-          `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y},0) rotate(${
-            d.x >= Math.PI ? 180 : 0
-          })`
-      )
-      .attr("dy", "0.31em")
-      .attr("x", (d) => (d.x < Math.PI ? 6 : -6))
-      .attr("text-anchor", (d) => (d.x < Math.PI ? "start" : "end"))
-      .text((d) => d.data.name);
-  });
+async function ensureTaxonomyTable(conn, db) {
+  // see if table exists
+  const tables = await conn.query("PRAGMA show_tables");
+  console.log(tables);
+  const names = tables.toArray().map(r => r.name);
+  console.log(names);
+  if (!names.includes("taxonomy")) {
+    // fetch the Parquet from your server
+    const resp = await fetch("/data/taxonomy.parquet");
+    if (!resp.ok) {
+      throw new Error("Failed to fetch taxonomy.parquet: " + resp.status);
+    }
+    const buffer = await resp.arrayBuffer();
+    // register it in DuckDB's virtual filesystem
+    await db.registerFileBuffer("taxonomy.parquet", new Uint8Array(buffer));
+    // now create the table from read_parquet pointing to that virtual file
+    await conn.query(
+      `CREATE TABLE taxonomy AS SELECT * FROM read_parquet('taxonomy.parquet')`
+    );
+  }
 }
 
+/**
+ * Build a D3-compatible hierarchy from flat rows,
+ * preserving `num_children` for each node.
+ */
+function buildHierarchy(rows, rootUid) {
+  const byId = new Map(
+    rows.map(r => [
+      r.uid,
+      {
+        ...r,        // uid, parent_uid, name, depth, num_children
+        children: [] // D3 expects a children array
+      }
+    ])
+  );
+  let root = null;
+  for (const row of rows) {
+    const node = byId.get(row.uid);
+    if (row.uid === rootUid) {
+      root = node;
+    } else if (byId.has(row.parent_uid)) {
+      byId.get(row.parent_uid).children.push(node);
+    }
+  }
+  document.getElementById("header").textContent = `Tree of life: Root node «${root.name}»`;
+  return root;
+}
+
+export function renderTree(containerSelector, drawFunc, data, depth = 100) {
+  // Clear old content
+  const container = document.querySelector(containerSelector);
+  container.innerHTML = "";
+
+  // Instantiate Hypertree using trivial dataloader
+  const ht = new hyt.Hypertree(
+    { parent: container, preserveAspectRatio: "xMidYMid meet" },
+    {
+      dataloader: ok => ok(data),
+      langInitBFS: (ht, n) => { n.precalc.label = n.data.name },
+      interaction: {
+        onNodeSelect: n => drawFunc(containerSelector, n.data.uid, depth),
+      }
+    }
+  );
+
+  // Animate and draw
+  ht.initPromise
+    .then(() => new Promise((ok, err) => ht.animateUp(ok, err)))
+    .then(() => ht.drawDetailFrame());
+}
+export async function drawHyperbolicTree(containerSelector, rootUid = 1, depth = 10) {
+  await ensureTaxonomyTable(window.duckdb_conn, window.duckdb_db);
+  const rows = await getSubtree(rootUid, depth);
+  const data = buildHierarchy(rows, rootUid);
+  renderTree(containerSelector, drawHyperbolicTree, data, depth);
+}
+
+export async function getSubtree(uid, depth = 10) {
+  const query = `
+    WITH RECURSIVE subtree(uid, parent_uid, name, depth) AS (
+        SELECT uid, parent_uid, name, 0 FROM taxonomy WHERE uid = ${uid}
+      UNION ALL
+        SELECT t.uid, t.parent_uid, t.name, s.depth + 1
+        FROM taxonomy t
+        JOIN subtree s ON t.parent_uid = s.uid
+        WHERE s.depth < ${depth}
+    )
+    SELECT
+      s.*,
+      (SELECT COUNT(*) FROM taxonomy t WHERE t.parent_uid = s.uid) AS num_children
+    FROM subtree s
+    WHERE (SELECT COUNT(*) FROM taxonomy t WHERE t.parent_uid = s.uid) > 0
+  `;
+
+  const result = await window.duckdb_conn.query(query);
+  return result.toArray().map(r => ({
+    uid: Number(r.uid),
+    parent_uid: r.parent_uid === null ? -1 : Number(r.parent_uid),
+    name: r.name,
+    num_children: Number(r.num_children)
+  }));
+}
