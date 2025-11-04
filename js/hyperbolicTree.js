@@ -1,19 +1,15 @@
 async function ensureTaxonomyTable(conn, db) {
-  // see if table exists
   const tables = await conn.query("PRAGMA show_tables");
   console.log(tables);
   const names = tables.toArray().map(r => r.name);
   console.log(names);
   if (!names.includes("taxonomy")) {
-    // fetch the Parquet from your server
     const resp = await fetch("/data/taxonomy.parquet");
     if (!resp.ok) {
       throw new Error("Failed to fetch taxonomy.parquet: " + resp.status);
     }
     const buffer = await resp.arrayBuffer();
-    // register it in DuckDB's virtual filesystem
     await db.registerFileBuffer("taxonomy.parquet", new Uint8Array(buffer));
-    // now create the table from read_parquet pointing to that virtual file
     await conn.query(
       `CREATE TABLE taxonomy AS SELECT * FROM read_parquet('taxonomy.parquet')`
     );
@@ -29,8 +25,8 @@ function buildHierarchy(rows, rootUid) {
     rows.map(r => [
       r.uid,
       {
-        ...r,        // uid, parent_uid, name, depth, num_children
-        children: [] // D3 expects a children array
+        ...r,
+        children: []
       }
     ])
   );
