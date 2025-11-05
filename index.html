@@ -3,15 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hyperbolic Tree & Arc Diagram</title>
+    <title>Hyperbolic Tree, Arc Diagram & Population Map</title>
     <link rel="stylesheet" href="style.css" />
-    <link href="d3-hypertree-light.css" rel="stylesheet">
+    <link href="d3-hypertree-light.css" rel="stylesheet" />
     <script src="d3-hypertree.js"></script>
     <script type="module">
       import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/+esm";
       import { drawHyperbolicTree } from "./js/hyperbolicTree.js";
       import { drawArcDiagram } from "./js/arcDiagram.js";
-    
+      import { drawDotDensityMap } from "./js/dotDensity.js";
+
       const MANUAL_BUNDLES = {
         mvp: {
           mainModule: "duckdb-mvp.wasm",
@@ -22,41 +23,53 @@
           mainWorker: "duckdb/duckdb-browser-eh.worker.js",
         },
       };
-    
+
       const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
       const worker = new Worker(bundle.mainWorker);
       const logger = new duckdb.ConsoleLogger();
       const db = new duckdb.AsyncDuckDB(logger, worker);
       await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
       const conn = await db.connect();
-    
+
       window.duckdb_conn = conn;
       window.duckdb_db = db;
-    
+
       const vizContainer = document.getElementById("viz");
       const hytContent = document.getElementById("hyt-content");
       const arcContent = document.getElementById("arc-content");
-    
+      const popContent = document.getElementById("pop-content");
+
       const uid = 805080;
       const depth = 10;
-    
+
       function showTree() {
         vizContainer.innerHTML = "";
         drawHyperbolicTree("#viz", uid, depth);
         hytContent.style.display = "block";
         arcContent.style.display = "none";
+        popContent.style.display = "none";
       }
-    
+
       function showArc() {
         vizContainer.innerHTML = "";
         drawArcDiagram("#viz", conn);
         hytContent.style.display = "none";
         arcContent.style.display = "block";
+        popContent.style.display = "none";
       }
-    
+
+      function showMap() {
+        vizContainer.innerHTML = "";
+        drawDotDensityMap("/data/municipios.geojson.gz", "/data/pob.tsv.gz", "#viz");
+        hytContent.style.display = "none";
+        arcContent.style.display = "none";
+        popContent.style.display = "block";
+      }
+
       document.getElementById("showTree").addEventListener("click", showTree);
       document.getElementById("showArc").addEventListener("click", showArc);
-    
+      document.getElementById("showMap").addEventListener("click", showMap);
+
       // Default view
       showTree();
     </script>
@@ -64,28 +77,57 @@
   </head>
   <body>
     <header>
-      <h1>Hyperbolic Tree & Arc Diagram</h1>
+      <h1>Hyperbolic Tree, Arc Diagram & Population Map</h1>
       <nav>
         <button id="showTree">Hyperbolic Tree</button>
         <button id="showArc">Arc Diagram</button>
+        <button id="showMap">Population Map</button>
       </nav>
     </header>
 
     <main>
       <div id="hyt-content">
-      <h1 id="header">Tree of life </h1>
-      <p style="width:800px"> Esta visualización está basada en el proyecto <a href="https://opentreeoflife.org/">opentreeoflife</a>,los datos han sido obtenidos de ese mismo proyecto, concretamente <a href="https://tree.opentreeoflife.org/about/taxonomy-version/ott3.7.2">aquí</a>. La librería utilizada es también la misma que la utilizada por este proyecto <code>d3-hypertree.js</code>.</p>
-      <h2>Diferencias con opentreeoflife</h2>
-      <p style="width:800px">Se sirven <emph>todos</emph> los datos en un fichero <b>parquet</b> que luego se consulta dinámicamente desde el navegador usando <b>duckdb-wasm</b>. De esta
-      manera podemos hacer que al hacer click se regenere el árbol centrado en el nodo elegido. Se podría utilizar esta tecnología para hacer cualquier tipo de consulta en el navegador y permitir mayor exploración al usuario.</p>
+        <h1 id="header">Tree of life</h1>
+        <p style="width:800px">
+          Esta visualización está basada en el proyecto
+          <a href="https://opentreeoflife.org/">opentreeoflife</a>, los datos han
+          sido obtenidos de ese mismo proyecto, concretamente
+          <a href="https://tree.opentreeoflife.org/about/taxonomy-version/ott3.7.2">aquí</a>.
+          La librería utilizada es también la misma que la utilizada por este proyecto
+          <code>d3-hypertree.js</code>.
+        </p>
+        <h2>Diferencias con opentreeoflife</h2>
+        <p style="width:800px">
+          Se sirven <em>todos</em> los datos en un fichero <b>parquet</b> que luego
+          se consulta dinámicamente desde el navegador usando <b>duckdb-wasm</b>.
+          De esta manera podemos hacer que al hacer click se regenere el árbol
+          centrado en el nodo elegido. Se podría utilizar esta tecnología para
+          hacer cualquier tipo de consulta en el navegador y permitir mayor
+          exploración al usuario.
+        </p>
       </div>
-      <div id="arc-content" style="hidden">
-      <p style="width:800px>
-        Datos obtenidos de <a href="https://data.europa.eu/data/datasets/mhouwtwjuyx7f1ozofbw">data.europa.eu</a>. La visualización se ha hecho solamente con D3.js sin librerías adicionales en este caso. Se pueden seleccionar varios países aprentando CTRL. Los datos están provistos por un fichero parquet y duckdb al igual que para la visualización del árbol hiperbólico.
-      </p>
+
+      <div id="arc-content" style="display:none">
+        <p style="width:800px">
+          Datos obtenidos de
+          <a href="https://data.europa.eu/data/datasets/mhouwtwjuyx7f1ozofbw">data.europa.eu</a>.
+          La visualización se ha hecho solamente con D3.js sin librerías adicionales en este caso.
+          Se pueden seleccionar varios países apretando <b>CTRL</b>. Los datos están provistos por
+          un fichero parquet y duckdb al igual que para la visualización del árbol hiperbólico.
+        </p>
       </div>
+
+      <div id="pop-content" style="display:none">
+        <p style="width:800px">
+          Visualización de densidad de población basada en datos de población procedentes
+          del <a href="https://www.ine.es/dynt3/inebase/es/index.htm?padre=525">INE</a> (TSV)
+          y la región exacta de cada municipio procedentes del <a href="https://centrodedescargas.cnig.es/CentroDescargas/limites-municipales-provinciales-autonomicos?utm_source=chatgpt.com">CNIG</a>(GeoJSON). Cada punto se genera aleatoriamente dentro
+          del municipio y representa un número fijo de habitantes (dot value, 100).
+          La generación y renderizado de puntos se realiza completamente en el navegador usando D3.js.
+        </p>
+      </div>
+
       <div id="viz" style="width:800px; height:800px; position:relative;"></div>
     </main>
   </body>
 </html>
-
