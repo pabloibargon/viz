@@ -48,22 +48,31 @@
         hytContent.style.display = "block";
         arcContent.style.display = "none";
         popContent.style.display = "none";
+      
+        const arcControls = document.getElementById("arc-controls");
+        if (arcControls) arcControls.style.display = "none";
       }
-
+      
       function showArc() {
         vizContainer.innerHTML = "";
         drawArcDiagram("#viz", conn);
         hytContent.style.display = "none";
         arcContent.style.display = "block";
         popContent.style.display = "none";
+      
+        const arcControls = document.getElementById("arc-controls");
+        if (arcControls) arcControls.style.display = "block";
       }
-
+      
       function showMap() {
         vizContainer.innerHTML = "";
         drawDotDensityMap("/data/municipios.geojson.gz", "/data/pob.tsv.gz", "#viz");
         hytContent.style.display = "none";
         arcContent.style.display = "none";
         popContent.style.display = "block";
+      
+        const arcControls = document.getElementById("arc-controls");
+        if (arcControls) arcControls.style.display = "none";
       }
 
       document.getElementById("showTree").addEventListener("click", showTree);
