@@ -88,25 +88,46 @@ export function drawImpact(containerId, data) {
         .call(g => g.select(".domain").remove())
         .selectAll("text").style("font-size", "14px").style("font-weight", "600");
 
-    // 6. CONCLUSIÓN FINAL (Anotación)
+// 6. CONCLUSIÓN FINAL (Anotación)
+    // Ajustamos el translate para que no quede tan pegado al borde inferior
     const climax = svg.append("g")
-        .attr("transform", `translate(${width/2 - 120}, ${height - 120})`)
+        .attr("transform", `translate(${(width - margin.left - margin.right) / 2}, ${height - margin.top - margin.bottom - 20})`)
         .style("opacity", 0);
 
+    // Título de la conclusión
     climax.append("text")
+        .attr("x", 0)
+        .attr("y", 30)
         .attr("text-anchor", "middle")
         .text("ESTRATEGIA DE SUPERVIVENCIA:")
-        .style("font-weight", "bold").style("fill", "#1a202c");
+        .style("font-family", "'Inter', sans-serif")
+        .style("font-weight", "800")
+        .style("fill", "#1a202c")
+        .style("font-size", "17px");
 
+    // Primera línea de descripción (bajamos 25px)
     climax.append("text")
-        .attr("y", 20).attr("text-anchor", "middle")
+        .attr("x", 0)
+        .attr("y", 60)
+        .attr("text-anchor", "middle")
         .text("Blindar los 'Paquetes Vacacionales' para")
-        .style("fill", "#666");
+        .style("font-family", "'Inter', sans-serif")
+        .style("fill", "#666")
+        .style("font-size", "15px");
 
+    // Segunda línea de descripción (bajamos otros 20px)
     climax.append("text")
-        .attr("y", 35).attr("text-anchor", "middle")
+        .attr("x", 0)
+        .attr("y", 80)
+        .attr("text-anchor", "middle")
         .text("compensar la volatilidad del cliente urbano.")
-        .style("fill", "#666");
+        .style("font-family", "'Inter', sans-serif")
+        .style("fill", "#666")
+        .style("font-size", "15px");
 
-    climax.transition().delay(2000).duration(1000).style("opacity", 1);
+    // Animación de aparición
+    climax.transition()
+        .delay(2000)
+        .duration(1000)
+        .style("opacity", 1);
 }

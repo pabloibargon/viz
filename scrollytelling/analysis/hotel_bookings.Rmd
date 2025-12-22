@@ -359,6 +359,7 @@ https://trends.google.es/trends/explore?date=2015-01-01%202017-12-31&q=lisboa,al
 max(table(x$dia))
 which.max(table(x$dia))
 ```
+
 With the computed day 'dia', along with the variables 'stays_in_week' and 
 'weekend_nights', we can try to manually categorize the trip type according
 to the following criteria (this is arbitrary, clearly improvable):
@@ -400,26 +401,6 @@ exploration, decide what story you want to tell about it. Some ideas:
 3) relationship between type of stay 'tipo' and cost 'adr'
 4) differences among groups with respect to hotel type (city / resort)
 
-```{r final_storytelling_exercise}
-# STORY: Relationship between Stay Type ('tipo') and Booking Cost ('adr')
-# We want to see if "Package" deals are actually cheaper per day than "Work" trips.
-
-ggplot(x, aes(x = reorder(tipo, adr, FUN = median), y = adr, fill = tipo)) +
-  geom_boxplot(outlier.shape = NA) +
-  coord_cartesian(ylim = c(0, 300)) +
-  labs(title = "Economic Analysis of Stay Types",
-       subtitle = "Median ADR across different trip categories",
-       x = "Stay Type", y = "ADR (Euro)") +
-  theme_minimal() +
-  theme(legend.position = "none")
-
-# Statistical confirmation
-ggbetweenstats(data = x, x = tipo, y = adr, 
-               title = "Statistical comparison of costs per stay type")
-
-# Findings: Work trips and short "Work+Rest" stays tend to have higher daily rates 
-# than long-term packages, suggesting business travel is a higher-yield segment.
-```
 
 NOTE: This is a good example of using ChatGPT or other generative AI to ask 
 interesting questions about the proposed dataset. The following paper describes
