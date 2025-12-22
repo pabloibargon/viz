@@ -1,0 +1,429 @@
+---
+title: "Visual analytics of hotel bookings data"
+author: "Julià Minguillón"
+date: "April 2025"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+NOTE: this tutorial uses R + RStudio + some R packages to show the potential
+of using data visualization for inspecting and analyzing a data set. We strongly
+recommend you to explore the following links:
+
+1) RStudio: https://posit.co/downloads/
+2) ggplot2: https://ggplot2.tidyverse.org/
+3) extensions: https://exts.ggplot2.tidyverse.org/gallery/
+4) ggmosaic: this package has been removed from CRAN, it is necessary to install
+and older version:
+
+Download and install RTools from "https://cran.rstudio.com/bin/windows/Rtools/rtools45/rtools.html"
+
+Download ggmosaic running install.packages( "ggmosaic", repos = c("https://haleyjeppson.r-universe.dev", "https://cloud.r-project.org")))
+
+## Load packages
+
+```{r packages}
+library("ggmosaic")
+library("ggplot2")
+library("fitdistrplus")
+library("MASS")
+library("survival")
+library("ggstatsplot")
+library("tidyverse")
+library("lubridate")
+```
+
+## Data loading and dimensions (N x M)
+
+We read the dataset in CSV format, with 119,390 rows y 32 columns:
+
+```{r load data}
+x=read.csv("hotel_bookings.csv", stringsAsFactors = T)
+dim(x)
+```
+## Data cleansing
+
+First, we'll inspect the data using the summary() function included in R.  You 
+can find an explanation of each variable in the article that describes this 
+dataset in detail, although the variable names are pretty much self-explanatory:
+
+```{r summary, echo=FALSE}
+summary(x)
+```
+
+# Numerical variables
+
+Some unexpected (outliers?) values for several variables can be observed.
+For instance:
+
+1) A maximum of 55 in 'adults'
+2) A maximum of 10 in 'children' (including also missing values)
+3) A maximum of 10 in 'babies'
+4) Negative values in the average daily rate ('adr') or or very high
+
+Let's visualize the histogram of the variable 'adults', with at least 55 
+breaks in the histogram, using the function hist() in R:
+
+```{r hist_adults}
+hist(x$adults,breaks=55)
+```
+
+It can be observed that the histogram shows no bars around the value 55, 
+given that this is a very large set and probably it's only one or a few cases. 
+In these cases, to analyze the extreme values of a variable, the values of the 
+variable in question can be represented graphically as follows, ordering and 
+plotting the data (if they are numerical, as in this case):
+
+```{r plot_adults}
+plot(sort(x$adults))
+grid()
+```
+The 'Index' represents the position of the element once it's sorted, but we're 
+more interested in the Y axis, as we can see that some elements have values 
+of 10 or higher. Since this is an integer variable with a limited set of 
+possible values, we can use table() to visualize them:
+
+```{r table_adults}
+table(x$adults)
+```
+As you can see, there's one reservation for 10 adults, two for 20 adults, 
+and so on, up to one for 55 adults! Without going into further detail, we'll 
+remove all rows with reservations for 10 or more adults:
+
+```{r clean_adults}
+x=x[x$adults<10,]
+```
+
+EXERCISE: Repeat this process with variables 'children' and 'babies'. Try also
+to change the threshold to less than 5 instead of 10. 
+
+```{r exercise_clean_guests}
+# Removing NAs for children before filtering to avoid losing data unexpectedly
+x$children[is.na(x$children)] <- 0
+
+# Apply threshold of 5 for children and babies
+x <- x[x$children < 5, ]
+x <- x[x$babies < 5, ]
+
+# Verify results
+table(x$children)
+table(x$babies)
+```
+
+The histogram of the 'adr' variable (average daily rate) presents the same 
+problem as the 'adults' variable, so we will simply create a graph with the 
+ordered values again:
+
+```{r plot_adr}
+plot(sort(x$adr))
+grid()
+```
+In this case, we observe that only one value is significantly higher than the 
+rest. We consider it an outlier and eliminate it, as well as the negative 
+values which have no a clear explanation, although we keep the 0 values:
+
+```{r clean_adr}
+x=x[x$adr>=0 & x$adr<1000,]
+```
+
+The histogram now provides us with some relevant information. We draw it using
+the ggplot2 package, which offers many more options than hist():
+
+```{r hist_adr}
+ggplot(data=x, aes(x=adr)) + 
+  geom_histogram(bins=55, colour="black", fill = "lightgray") +
+  theme_light()
+```
+EXERCISE: improve the graph to make axis, title, etc. more adequate.
+
+```{r exercise_improved_hist}
+ggplot(data=x, aes(x=adr)) + 
+  geom_histogram(bins=60, colour="white", fill = "#2c3e50") +
+  labs(title = "Distribution of Average Daily Rate (ADR)",
+       subtitle = "Values filtered below 1000€",
+       x = "Average Daily Rate (EUR)",
+       y = "Frequency",
+       caption = "Source: Hotel Bookings Dataset") +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold", size = 14))
+```
+
+We can see that there is a set of approximately 2,000 zero values, which could
+be analyzed separately, for example. There are R packages that help us estimate
+this distribution and the parameters that determine it visually, such as the 
+fitdistrplus package, which provides the descdist() function (caution, slow!):
+
+```{r descdist}
+require(fitdistrplus)
+descdist(x$adr,boot=1000)
+```
+As you can see, the real data (observations, a colored dot) and the simulated
+data (in other color) approximate what a lognormal distribution might look like. 
+However, to experiment with the cleanest possible data set, we will:
+
+1) remove 0-day stays
+2) remove 0-cost stays
+3) remove stays with no guests
+4) replace the NAs in the children variable with 0
+
+```{r data_cleansing}
+x[is.na(x$children),'children']=0
+x=x[x$adr>0 & 
+    (x$stays_in_week_nights+x$stays_in_weekend_nights)>0 & 
+    (x$adults+x$children+x$babies)>0 & 
+    !is.na(x$children),]
+```
+
+## Categorical variables
+
+For categorical variables, the summary() function gives us a first idea of the
+possible values each can take. For example, in the original set (before removing
+outliers), there are 79,330 reservations at a city hotel (Lisbon) and 40,060 at
+a resort (Algarve). We can ask ourselves whether the cost distribution is the
+same for both groups, either by using the appropriate statistical test or simply
+by comparing histograms, in this case using the ggplot2 package, which is much
+more powerful for creating all kinds of graphs:
+
+```{r hist_adr_tipo}
+# require(ggplot2)
+ggplot(data=x, aes(x=adr, fill=hotel)) + 
+  geom_histogram(bins=50, colour="black") +
+  theme_light()
+```
+It can be seen that the most common prices in Lisbon (city hotels) are slightly
+to the right of the most common prices in the Algarve (resort hotels), although
+the highest prices in Lisbon decrease more rapidly than in the Algarve. By using
+a violin plot, we can see more detail, especially if we also show the typical
+quartiles of a box plot:
+
+```{r violin_adr_tipo}
+ggplot(data=x, aes(x=hotel, y=adr, fill=hotel)) + 
+  geom_violin() + geom_boxplot(width=.1, outliers = F) +
+  coord_flip() + 
+  theme_light()
+```
+There is an R package called ggstatsplot that has specific functions for each
+type of graph, including appropriate statistical tests to determine if there
+are differences between groups:
+
+```{r ggstatsplot}
+# require(ggstatsplot)
+ggbetweenstats(data=x, x=hotel, y=adr)
+```
+Another interesting variable is the hotel guests' origin ('country'). The
+problem is that this variable has many different values (178), so we should
+focus on the countries with the most tourists, also showing whether they choose
+a city hotel or a resort:
+
+```{r country}
+# require(tidyverse)
+# countries with at least 100 bookings
+xx = x %>% group_by(country) %>% mutate(pais=n()) %>% filter(pais>=100)
+xx$country=factor(xx$country)
+ggplot(data=xx, aes(x=reorder(country, -pais))) + 
+  geom_bar(stat="count", aes(fill=hotel)) +
+  theme_light() + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+```
+Obviously, Portugal (PRT) ranks first, followed by neighboring countries such
+as Great Britain, France, and Spain. Visitors from Great Britain and Ireland
+are most likely to choose a resort, while those from France, Germany, and Italy
+primarily visit Lisbon.
+
+EXERCISE: Are there differences between residents of Portugal and the rest?
+
+```{r exercise_portugal_rest}
+# Create a new grouping variable
+x$is_portuguese <- ifelse(x$country == "PRT", "Portugal", "International")
+
+# Compare ADR between Portuguese and international guests
+ggbetweenstats(data=x, x=is_portuguese, y=adr, 
+               title = "ADR Comparison: Local vs International Guests")
+```
+
+Another interesting variable is 'is_canceled', which indicates whether a 
+reservation was canceled or not (37.0% of the time). We can observe the 
+relationship between two categorical variables using a mosaic chart:
+
+```{r mosaic_hotel_is_canceled}
+# require(ggmosaic)
+x$is_canceled=as.factor(x$is_canceled)
+ggplot(data=x) + 
+  geom_mosaic(aes(x=product(is_canceled, hotel), fill=hotel)) +
+  theme_light() 
+```
+It can be seen that the cancellation rate (denoted by 1 on the Y-axis) at a 
+resort is lower than that of a hotel in Lisbon. On the X-axis, the relative
+size of each column also corresponds to the proportion of each hotel type. 
+It is important not to consider the Y-axis labels (0/1) as the actual numerical
+cancellation rate, as this can be misleading.
+
+EXERCISE: which other type of graph could be used to represent this data?
+
+```{r exercise_alternative_categorical}
+# A stacked bar chart (normalized to 100%) is a clear alternative
+ggplot(x, aes(x = hotel, fill = is_canceled)) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Cancellation Proportions by Hotel Type",
+       y = "Percentage", fill = "Canceled (1=Yes)") +
+  theme_minimal()
+```
+
+In the case of cancellation by country for the countries with more tourists:
+
+```{r mosaic_country_is_canceled}
+# at least 1000 bookings
+xx = x %>% group_by(country) %>% mutate(pais=n()) %>% filter(pais>=1000)
+xx$country=factor(xx$country)
+ggplot(data=xx) + 
+  geom_mosaic(aes(x=product(is_canceled, country), fill=country)) +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+```
+It can be seen that the cancellation rate is much higher for local tourists 
+(from Portugal, PRT), while it is much lower for the rest of the countries.
+However, this graph is not easy to read; in this case, there is no order of 
+either the countries or the percentage of cancellations.
+
+EXERCISE: Improve the previous graph to make it more understandable and 
+consider whether it is possible to visualize the relationships between three
+or more categorical variables.
+
+```{r exercise_improved_categorical}
+# To make it understandable, we calculate cancellation rates and reorder
+xx_stats <- x %>% 
+  group_by(country) %>% 
+  summarise(n = n(), 
+            cancel_rate = mean(as.numeric(as.character(is_canceled)))) %>% 
+  filter(n >= 1000)
+
+ggplot(xx_stats, aes(x = reorder(country, -cancel_rate), y = cancel_rate, fill = cancel_rate)) +
+  geom_col() +
+  scale_fill_gradient(low = "steelblue", high = "red") +
+  labs(title = "Cancellation Rate by Country (Top Countries)",
+       x = "Country", y = "Cancellation Rate") +
+  theme_light()
+
+# Visualizing 3 variables (Country, Hotel, Cancellation)
+xx_3var <- x %>% 
+  group_by(country, hotel) %>% 
+  mutate(n = n()) %>% 
+  filter(n >= 500)
+
+ggplot(xx_3var, aes(x = country, fill = is_canceled)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~hotel) +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title = "Cancellations by Country and Hotel Type")
+```
+
+Finally, let's analyze the behavior of reservations relative to the arrival
+date. First, using the R lubridate package (a marvel for manipulating date and
+time data), we'll create a 'day' variable to determine the day of the week the
+hotel was checked in and analyze how many reservations there were each day:
+
+```{r dia}
+# require(lubridate)
+x$dia=as_date(paste0(x$arrival_date_year,'-',x$arrival_date_month,'-',x$arrival_date_day_of_month))
+ggplot(data=x,aes(x=dia,group=arrival_date_year,color=as.factor(arrival_date_year))) + 
+  geom_bar() + scale_color_manual(values=c("2015"="red","2016"="green","2017"="blue")) + 
+  theme_light() + 
+  theme(legend.position='none') 
+```
+EXERCISE: Improve and split the above graph by hotel type or country of origin.
+
+```{r exercise_date_split}
+# Splitting by hotel type using facet_wrap for better clarity
+ggplot(data=x, aes(x=dia, color=hotel)) + 
+  geom_line(stat="count") + 
+  facet_wrap(~hotel, scales = "free_y", ncol = 1) +
+  labs(title = "Daily Arrivals by Hotel Type", x = "Date", y = "Number of Bookings") +
+  theme_light()
+```
+
+As described in the article, the data covers the period from July 1, 2015, to
+August 31, 2017. Some peaks can be observed that might be interesting to explain
+(what happened those days, i.e. 2015-12-05?). You can check Google Trends to
+get some insights:
+
+https://trends.google.es/trends/explore?date=2015-01-01%202017-12-31&q=lisboa,algarve&hl=es
+
+```{r max_dia}
+max(table(x$dia))
+which.max(table(x$dia))
+```
+With the computed day 'dia', along with the variables 'stays_in_week' and 
+'weekend_nights', we can try to manually categorize the trip type according
+to the following criteria (this is arbitrary, clearly improvable):
+
+1) if 'stays_in_weekend_nights' is zero => work trip
+2) if 'stays_in_week_nights' is zero or one and in this case the entry is on
+   Friday => weekend
+3) if 'stays_in_week_nights' is five and 'stays_in_weekend_nights' is three 
+  (that is, from Saturday or Sunday to Saturday or Sunday) 
+   => week holiday package
+4) if 'stays_in_weekend_nights' is one or two and 'stays_in_week_days' is five
+   or less => work + rest
+5) the rest of combinations => holidays
+
+```{r tipo_visita}
+# require(lubridate)
+x$tipo=ifelse(x$stays_in_weekend_nights==0, "work",
+       ifelse(x$stays_in_week_nights==0, "weekend",
+       ifelse(x$stays_in_week_nights==1 & wday(x$dia)==6, "weekend",
+       ifelse(x$stays_in_week_nights==5 & 
+              (x$stays_in_weekend_nights==3 |
+               x$stays_in_weekend_nights==4), "package",
+       ifelse(x$stays_in_week_nights<=5 & 
+              x$stays_in_weekend_nights<3, "work+rest",
+       "rest")))))
+```
+
+One way to refine this classification would be to look at the number of adults,
+children, and infants to decide whether it is a business traveler or a family.
+The possibilities are endless: you can enrich the dataset with geographic data
+(distance between countries), demographic data, economic data (per capita
+income), weather data (in both Portugal and the country of origin), etc. 
+
+EXERCISE: You must explore such enriched dataset and, in this process of 
+exploration, decide what story you want to tell about it. Some ideas:
+
+1) do tourists from different countries travel in different dates?
+2) differences in cancellations among groups (countries, type of stay, ...)
+3) relationship between type of stay 'tipo' and cost 'adr'
+4) differences among groups with respect to hotel type (city / resort)
+
+```{r final_storytelling_exercise}
+# STORY: Relationship between Stay Type ('tipo') and Booking Cost ('adr')
+# We want to see if "Package" deals are actually cheaper per day than "Work" trips.
+
+ggplot(x, aes(x = reorder(tipo, adr, FUN = median), y = adr, fill = tipo)) +
+  geom_boxplot(outlier.shape = NA) +
+  coord_cartesian(ylim = c(0, 300)) +
+  labs(title = "Economic Analysis of Stay Types",
+       subtitle = "Median ADR across different trip categories",
+       x = "Stay Type", y = "ADR (Euro)") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Statistical confirmation
+ggbetweenstats(data = x, x = tipo, y = adr, 
+               title = "Statistical comparison of costs per stay type")
+
+# Findings: Work trips and short "Work+Rest" stays tend to have higher daily rates 
+# than long-term packages, suggesting business travel is a higher-yield segment.
+```
+
+NOTE: This is a good example of using ChatGPT or other generative AI to ask 
+interesting questions about the proposed dataset. The following paper describes
+the potential uses of generative AI in the different phases of creating a data
+visualization for storytelling:
+
+https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10891192

@@ -10,25 +10,20 @@
     <script src="https://unpkg.com/scrollama"></script>
 
     <style>
-:root {
-        /* Colores más neutros para eliminar el tinte azul */
+    :root {
         --bg-color: #ffffff;
         --text-color: #1a1a1a;
-        --accent-color: #1a202c; /* Gris carbón neutro */
-        --glass-white: rgba(255, 255, 255, 0.12); /* Más transparente */
+        --accent-color: #1a202c; 
+        --glass-white: rgba(255, 255, 255, 0.12);
     }
 
     body {
         font-family: 'Inter', 'Segoe UI', sans-serif;
         margin: 0;
         color: var(--text-color);
-        
-        /* --- FONDO NEUTRO CON CALÇADA --- */
         background-image: 
-            /* Capa 1: Overlay blanco neutro (menos azulado que el anterior) */
             linear-gradient(rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.82)),
             url('./assets/calcada.jpeg');
-        
         background-attachment: fixed;
         background-size: cover;
         background-position: center;
@@ -41,7 +36,6 @@
         justify-content: center;
         align-items: center;
         text-align: center;
-        /* Oscurecido neutro para el header */
         background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
                     url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1350&q=80');
         background-size: cover;
@@ -51,6 +45,64 @@
         margin-bottom: 4rem;
     }
 
+    /* --- ESTILO DEL PASO INTRODUCTORIO (FUERA DEL SCROLLY) --- */
+    .intro-full-width {
+        max-width: 1200px;
+        margin: 0 auto 15vh auto;
+        padding: 0 2rem;
+    }
+
+    .glass-hero {
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(20px) saturate(120%);
+        -webkit-backdrop-filter: blur(20px) saturate(120%);
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        padding: 4rem;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .hero-content { margin: 0 auto; }
+    .eyebrow {
+        text-transform: uppercase; letter-spacing: 3px; font-size: 0.9rem;
+        font-weight: 700; color: var(--accent-color); opacity: 0.7;
+        display: block; margin-bottom: 1rem;
+    }
+    .hero-content h2 { font-size: 3rem; margin-bottom: 2rem; color: var(--accent-color); }
+    .hero-content p { font-size: 1.2rem; line-height: 1.8; color: #333; margin-bottom: 1.5rem; }
+
+    .scroll-indicator {
+        margin-top: 3rem; display: flex; flex-direction: column;
+        align-items: center; gap: 10px; font-weight: 600; font-size: 0.9rem;
+    }
+	/* Estilo del icono de flecha */
+	.arrow-icon {
+	    width: 32px;
+	    height: 32px;
+	    margin-top: 10px;
+	    color: var(--accent-color);
+	    opacity: 0.6;
+	    animation: arrowBounce 2s infinite;
+	}
+
+	/* Animación de rebote y desvanecimiento */
+	@keyframes arrowBounce {
+	    0% {
+		transform: translateY(0);
+		opacity: 0.2;
+	    }
+	    50% {
+		transform: translateY(15px);
+		opacity: 1;
+	    }
+	    100% {
+		transform: translateY(0);
+		opacity: 0.2;
+	    }
+	}
+
+    /* --- CONTENEDOR SCROLLY (2 COLUMNAS) --- */
     #scrolly {
         position: relative;
         display: flex;
@@ -64,7 +116,6 @@
         width: 40%;
     }
 
-    /* --- PANEL DE GRÁFICO (MÁS TRANSPARENTE Y NEUTRO) --- */
     .sticky-graphic {
         position: -webkit-sticky;
         position: sticky;
@@ -75,156 +126,151 @@
         display: flex;
         align-items: center;
         justify-content: center;
-
-        /* Aumento de transparencia y reducción de saturación */
         background: rgba(255, 255, 255, 0.12); 
         backdrop-filter: blur(20px) saturate(110%);
         -webkit-backdrop-filter: blur(20px) saturate(110%);
-        
         border-radius: 30px;
         border: 1px solid rgba(255, 255, 255, 0.35);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        
         box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.1);
         z-index: 5;
     }
 
-    #viz {
-        width: 90%;
-        height: 90%;
-    }
+    #viz { width: 90%; height: 90%; }
 
-    /* --- STEPS DE TEXTO: MÁS TRANSPARENTES --- */
     .step {
         margin: 0 auto 35rem auto;
-        
-        /* Estado base: Casi invisible, solo el blur delata el cristal */
         background: rgba(255, 255, 255, 0.03); 
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
-        
         padding: 2.5rem;
         border-radius: 24px;
-        
         border: 1px solid rgba(255, 255, 255, 0.15);
-        /* Eliminado el tinte azul del borde izquierdo */
         border-left: 4px solid rgba(0, 0, 0, 0.05); 
-        
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.03);
-        
         transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         opacity: 0.25;
         transform: scale(0.94);
     }
 
-    .step:last-child {
-        margin-bottom: 25vh;
-    }
+    .step:last-child { margin-bottom: 10.5rem; }
 
-    /* Estado Activo: Iluminación neutra */
     .step.is-active {
         opacity: 1;
         transform: scale(1) translateX(25px);
-        
-        /* Transparencia aumentada en activo (0.1) */
         background: rgba(255, 255, 255, 0.1); 
-        
         backdrop-filter: blur(18px) saturate(100%);
         -webkit-backdrop-filter: blur(18px) saturate(100%);
-        
         border: 1px solid rgba(255, 255, 255, 0.45);
         border-left: 8px solid var(--accent-color); 
-        
         box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.08);
     }
 
-    .step h2 {
-        margin-top: 0;
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: var(--accent-color);
-    }
-
-    .step p {
-        line-height: 1.7;
-        font-size: 1.1rem;
-        color: #4a4a4a; /* Gris neutro */
-    }
-
-    .step.is-active p {
-        color: #000000;
-    }
+    .step h2 { margin-top: 0; font-size: 1.8rem; font-weight: 800; color: var(--accent-color); }
+    .step p { line-height: 1.7; font-size: 1.1rem; color: #4a4a4a; }
+    .step.is-active p { color: #000000; }
 
     footer {
         height: 15vh;
         display: flex;
         justify-content: center;
         align-items: center;
-        background: #111111; /* Negro puro para el final */
+        background: #111111;
         color: rgba(255,255,255,0.7);
         clip-path: polygon(0 20%, 100% 0, 100% 100%, 0 100%);
     }
-</style>
+    </style>
 </head>
 <body>
 
-    <header>
-        <h1>Análisis de Demanda Hotelera</h1>
-        <p>Una historia de datos procesada con DuckDB-wasm y visualizada con D3.js</p>
+<header>
+        <h1>El Huésped Fantasma</h1>
+        <p>Una investigación de datos sobre la volatilidad hotelera en Portugal</p>
     </header>
 
     <main>
+        <!-- Introducción HERO -->
+        <section class="intro-full-width">
+            <div class="glass-hero">
+                <div class="hero-content">
+                    <span class="eyebrow">Crónica de una Reserva</span>
+                    <h2>Tras la estela de las habitaciones vacías</h2>
+                    <p>
+                        Portugal es un imán para el mundo, pero detrás de las luces de Lisboa y las playas del Algarve se esconde un misterio logístico: 
+                        <strong>¿por qué miles de habitaciones reservadas nunca llegan a ocuparse?</strong>
+                    </p>
+                    <p>
+                        A continuación, procesaremos en tiempo real <strong>119.390 registros</strong> utilizando tecnología DuckDB-Wasm. 
+                        No solo veremos números; buscaremos las huellas del "huésped fantasma" para entender quién nos deja plantados y qué le cuesta eso a Portugal.
+                    </p>
+			    
+                    <div class="scroll-indicator">
+                        <span>Desliza para iniciar la investigación</span>
+                        <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Interactiva -->
         <section id="scrolly">
-            <!-- Gráfico Fijo -->
+            <!-- Columna Izquierda: Gráfico Fijo -->
             <figure class="sticky-graphic">
                 <div id="viz"></div>
             </figure>
 
-            <!-- Narrativa Deslizable -->
+            <!-- Columna Derecha: Narrativa Deslizable -->
             <article>
+                <!-- ACTO I -->
                 <div class="step" data-step="overview">
-                    <h2>¿Cuándo viajan los turistas?</h2>
-                    <p>Utilizando un conjunto de datos de dos hoteles en Portugal (H1: Resort y H2: Ciudad), exploramos la estacionalidad.</p>
-                    <p><b>DuckDB</b> procesa en milisegundos las 119,390 filas para mostrarnos que, mientras el Resort tiene picos extremos en verano, el Hotel de Ciudad mantiene una demanda más constante.</p>
+                    <span class="eyebrow">Acto I</span>
+                    <h2>La Marea Alta</h2>
+                    <p>El latido del turismo portugués es rítmico y potente. Cada año, la marea de reservas sube hasta alcanzar su <strong>pico en agosto</strong>.</p>
+                    <p>Observe la corriente azul de Lisboa y la dorada del Algarve. En apariencia, el éxito es total, pero esta marea esconde una neblina de incertidumbre.</p>
                 </div>
 
+                <!-- ACTO II -->
                 <div class="step" data-step="cancellations">
-                    <h2>La Incertidumbre del Check-in</h2>
-                    <p>El gran problema del sector es la cancelación. Casi el <b>37% de las reservas totales</b> se cancelan.</p>
-                    <p>Observe la disparidad: el hotel urbano sufre mucho más la volatilidad del cliente que el complejo vacacional en el Algarve.</p>
+                    <span class="eyebrow">Acto II</span>
+                    <h2>Habitaciones de Humo</h2>
+                    <p>Aquí aparece la grieta: el fenómeno de la cancelación. Casi el <strong>37% de las reservas totales se disuelven</strong> antes del check-in.</p>
+                    <p>En Lisboa, el problema es crítico: <strong>4 de cada 10 habitaciones</strong> son "fantasmas". El hotel urbano vive en una fragilidad constante comparado con la estabilidad del Resort.</p>
                 </div>
 
+                <!-- ACTO III -->
                 <div class="step" data-step="nationality">
-                    <h2>Un Destino Sin Fronteras</h2>
-                    <p>Portugal atrae a todo el mundo. El Reino Unido (GBR) lidera el turismo internacional, seguido de cerca por Francia y España.</p>
-                    <p>Este análisis en tiempo real identifica el Top 10 de mercados emisores, permitiendo optimizar las campañas de marketing por país.</p>
+                    <span class="eyebrow">Acto III</span>
+                    <h2>La Paradoja de la Proximidad</h2>
+                    <p>¿Quién es el huésped fantasma? La lógica sugeriría al extranjero lejano, pero los datos revelan una verdad inesperada.</p>
+                    <p><strong>Portugal es el gran outlier</strong>: es el mercado que paga los precios más bajos, pero el que más cancela (58%). El riesgo, paradójicamente, habla portugués.</p>
+                </div>
+
+                <!-- ACTO IV -->
+                <div class="step" data-step="impact">
+                    <span class="eyebrow">Acto IV</span>
+                    <h2>El Escudo de Valor</h2>
+                    <p>La batalla final se libra entre el riesgo y la recompensa. No todas las cancelaciones duelen igual.</p>
+                    <p>El hotel sobrevive blindando las <strong>estancias de alto valor (Paquetes)</strong>, cuyo precio compensa la volatilidad del cliente urbano.</p>
                 </div>
             </article>
         </section>
     </main>
 
     <footer>
-        <p>Visualización de Datos - PAC Narrativa - 2025</p>
+        <p>Visualización de Datos - PEC3 - 2025</p>
     </footer>
 
-    <!-- Lógica de Datos y Scroll -->
     <script type="module">
         import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/+esm";
         import { drawOverview } from "./js/overview.js";
         import { drawCancellations } from "./js/cancellations.js";
         import { drawNationality } from "./js/nationality.js";
+        import { drawImpact } from "./js/impact.js";
 
-        // Configuración DuckDB-wasm
         const MANUAL_BUNDLES = {
-            mvp: {
-                mainModule: "duckdb-mvp.wasm",
-                mainWorker: "../duckdb/duckdb-browser-mvp.worker.js",
-            },
-            eh: {
-                mainModule: "duckdb-eh.wasm",
-                mainWorker: "../duckdb/duckdb-browser-eh.worker.js",
-            },
+            mvp: { mainModule: "duckdb-mvp.wasm", mainWorker: "../duckdb/duckdb-browser-mvp.worker.js" },
+            eh: { mainModule: "duckdb-eh.wasm", mainWorker: "../duckdb/duckdb-browser-eh.worker.js" },
         };
 
         let conn, db;
@@ -232,79 +278,80 @@
         async function initDuckDB() {
             const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
             const worker = new Worker(bundle.mainWorker);
-            const logger = new duckdb.ConsoleLogger();
-            db = new duckdb.AsyncDuckDB(logger, worker);
-            await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+            db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
+            await db.instantiate(bundle.mainModule);
             conn = await db.connect();
-            
-            window.duckdb_conn = conn;
-            window.duckdb_db = db;
+            window.duckdb_conn = conn; window.duckdb_db = db;
         }
 
         async function ensureHotelsTable() {
             const tables = await conn.query("PRAGMA show_tables");
-            const names = tables.toArray().map(r => r.name);
-            
-            if (!names.includes("hotels")) {
+            if (!tables.toArray().map(r => r.name).includes("hotels")) {
                 const resp = await fetch("data/hotel_bookings.parquet");
-                if (!resp.ok) throw new Error("Fallo al cargar parquet");
-                
                 const buffer = await resp.arrayBuffer();
                 await db.registerFileBuffer("hotels_local.parquet", new Uint8Array(buffer));
-                await conn.query(
-                    `CREATE TABLE hotels AS SELECT * FROM read_parquet('hotels_local.parquet')`
-                );
+                await conn.query(`CREATE TABLE hotels AS SELECT * FROM read_parquet('hotels_local.parquet')`);
             }
         }
 
-        // Manejador del Scroll
         async function handleStepEnter(response) {
-            // Activar clase CSS
             d3.selectAll('.step').classed('is-active', (d, i) => i === response.index);
-            
             const step = response.element.dataset.step;
             await ensureHotelsTable();
 
             if (step === "overview") {
-                const res = await conn.query(`
-                    SELECT arrival_date_month, hotel, COUNT(*) as total 
-                    FROM hotels GROUP BY 1, 2
-                `);
+                const res = await conn.query(`SELECT arrival_date_month, hotel, COUNT(*) as total FROM hotels GROUP BY 1, 2`);
                 drawOverview("#viz", res.toArray());
-            } 
-            else if (step === "cancellations") {
-                const res = await conn.query(`
-                    SELECT hotel, is_canceled, COUNT(*) as count 
-                    FROM hotels GROUP BY 1, 2
-                `);
-                drawCancellations("#viz", res.toArray());
-            } 
-            else if (step === "nationality") {
-                const res = await conn.query(`
-                    SELECT country, COUNT(*) as count 
-                    FROM hotels WHERE country != 'NULL' 
-                    GROUP BY 1 ORDER BY 2 DESC LIMIT 10
-                `);
-                drawNationality("#viz", res.toArray());
-            }
-        }
-
-        // Inicialización General
-        async function main() {
+            } else if (step === "cancellations") {
+	    // Calculamos el volumen total vs cancelados por cada tipo de hotel
+	    const res = await conn.query(`
+		SELECT 
+		    hotel, 
+		    COUNT(*)::INT as total, 
+		    SUM(is_canceled)::INT as canceled 
+		FROM hotels 
+		GROUP BY hotel
+	    `);
+	    drawCancellations("#viz", res.toArray());
+	} else if (step === "nationality") {
+	    // Calculamos Volumen, Precio Medio y Tasa de Cancelación por país
+	    const res = await conn.query(`
+		SELECT 
+		    country, 
+		    COUNT(*)::INT as volumen, 
+		    AVG(adr)::DOUBLE as precio_medio,
+		    (AVG(is_canceled) * 100)::DOUBLE as tasa_cancelacion
+		FROM hotels 
+		WHERE country != 'NULL' 
+		GROUP BY country 
+		HAVING volumen > 1000
+		ORDER BY volumen DESC
+	    `);
+	    drawNationality("#viz", res.toArray());
+	}
+	else if (step === "impact") {
+	    const res = await conn.query(`
+		SELECT 
+		    CASE 
+			WHEN stays_in_weekend_nights = 0 THEN 'Urbano/Trabajo'
+			WHEN stays_in_week_nights = 5 AND (stays_in_weekend_nights >= 3) THEN 'Paquete Vacacional'
+			ELSE 'Estancia Corta'
+		    END as categoria,
+		    AVG(adr)::DOUBLE as precio_medio,
+		    (AVG(is_canceled) * 100)::DOUBLE as tasa_riesgo
+		FROM hotels 
+		WHERE adr > 0 
+		GROUP BY 1
+	    `);
+	    drawImpact("#viz", res.toArray());
+	}
+	}
+	async function main() {
             await initDuckDB();
-            
             const scroller = scrollama();
-            scroller
-                .setup({
-                    step: "#scrolly article .step",
-                    offset: 0.5,
-                    debug: false
-                })
-                .onStepEnter(handleStepEnter);
-
+            scroller.setup({ step: "#scrolly article .step", offset: 0.5, debug: false }).onStepEnter(handleStepEnter);
             window.addEventListener("resize", scroller.resize);
         }
-
         main();
     </script>
 </body>

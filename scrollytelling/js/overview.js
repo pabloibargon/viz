@@ -1,105 +1,133 @@
+/**
+ * ACTO I: LA MAREA ALTA (Con silueta resaltada y Anotación de Agosto)
+ */
 export function drawOverview(containerId, data) {
     const d3 = window.d3;
     const container = d3.select(containerId);
     
-    // 1. Limpieza y Configuración de dimensiones
     container.html(""); 
-    const margin = {top: 80, right: 30, bottom: 40, left: 60};
-    const width = 800 - margin.left - margin.right;
-    const height = 450 - margin.top - margin.bottom;
+    const width = 800;
+    const height = 450;
+    const margin = {top: 120, right: 30, bottom: 50, left: 60};
 
     const svg = container.append("svg")
-        .attr("viewBox", `0 0 ${800} ${450}`)
+        .attr("viewBox", `0 0 ${width} ${height}`)
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // 2. Definición de Gradientes (Estética "Atlántico & Sol")
-    const defs = svg.append("defs");
-
-    // Gradiente para City Hotel (Azules)
-    const gradCity = defs.append("linearGradient").attr("id", "gradCity").attr("x1","0%").attr("y1","0%").attr("x2","0%").attr("y2","100%");
-    gradCity.append("stop").attr("offset", "0%").attr("stop-color", "#3e84a8");
-    gradCity.append("stop").attr("offset", "100%").attr("stop-color", "#2C5F78");
-
-    // Gradiente para Resort Hotel (Dorados)
-    const gradResort = defs.append("linearGradient").attr("id", "gradResort").attr("x1","0%").attr("y1","0%").attr("x2","0%").attr("y2","100%");
-    gradResort.append("stop").attr("offset", "0%").attr("stop-color", "#ffcc33");
-    gradResort.append("stop").attr("offset", "100%").attr("stop-color", "#E1AD01");
-
-    // 3. Preparación de Datos
+    // 1. Preparación de datos cronológica
     const monthOrder = ["January", "February", "March", "April", "May", "June", 
                         "July", "August", "September", "October", "November", "December"];
     
-    const formattedData = data.map(d => ({
-        month: d.arrival_date_month,
-        hotel: d.hotel,
-        total: Number(d.total) // Conversión de BigInt de DuckDB
-    })).sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
+    const nestedData = monthOrder.map(month => {
+        const obs = { month: month };
+        data.filter(d => d.arrival_date_month === month).forEach(d => {
+            obs[d.hotel] = Number(d.total);
+        });
+        return obs;
+    });
 
-    // 4. Escalas
-    const x0 = d3.scaleBand().domain(monthOrder).rangeRound([0, width]).paddingInner(0.2);
-    const x1 = d3.scaleBand().domain(["Resort Hotel", "City Hotel"]).rangeRound([0, x0.bandwidth()]).padding(0.1);
-    const y = d3.scaleLinear().domain([0, d3.max(formattedData, d => d.total)]).nice().rangeRound([height, 0]);
+    // 2. Escalas
+    const x = d3.scalePoint()
+        .domain(monthOrder)
+        .range([0, width - margin.left - margin.right]);
 
-    // 5. Ejes y Cuadrícula (Gridlines suaves)
-    svg.append("g")
-        .attr("class", "grid")
-        .attr("color", "#e0e0e0")
-        .attr("stroke-width", 0.5)
-        .call(d3.axisLeft(y).tickSize(-width).tickFormat(""));
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(nestedData, d => (d["City Hotel"] || 0) + (d["Resort Hotel"] || 0))])
+        .nice()
+        .range([height - margin.top - margin.bottom, 0]);
 
-    const xAxis = svg.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x0));
+    // 3. Stack y Generadores (Area y Línea fluida)
+    const stack = d3.stack().keys(["Resort Hotel", "City Hotel"]);
+    const series = stack(nestedData);
 
-    xAxis.selectAll("text")
-        .attr("transform", "rotate(-35)")
-        .style("text-anchor", "end")
-        .style("font-family", "Inter, sans-serif")
-        .style("color", "#666");
+    const areaGen = d3.area()
+        .x(d => x(d.data.month))
+        .y0(d => y(d[0]))
+        .y1(d => y(d[1]))
+        .curve(d3.curveBasis);
 
-    svg.append("g")
-        .call(d3.axisLeft(y).ticks(5))
-        .style("font-family", "Inter, sans-serif");
+    const lineGen = d3.line()
+        .x(d => x(d.data.month))
+        .y(d => y(d[1])) // Sigue el borde superior
+        .curve(d3.curveBasis);
 
-    // 6. Dibujo de Barras con Animación "Grow"
-    const groups = svg.append("g")
-        .selectAll("g")
-        .data(d3.group(formattedData, d => d.month))
-        .join("g")
-        .attr("transform", ([month]) => `translate(${x0(month)},0)`);
-
-    groups.selectAll("rect")
-        .data(([, d]) => d)
-        .join("rect")
-        .attr("x", d => x1(d.hotel))
-        .attr("width", x1.bandwidth())
-        .attr("rx", 5) // Esquinas redondeadas
-        .attr("fill", d => d.hotel === "City Hotel" ? "url(#gradCity)" : "url(#gradResort)")
-        // --- Estado Inicial de la Animación ---
-        .attr("y", height)
-        .attr("height", 0)
-        // --- Transición Grow ---
+    // 4. ClipPath para la animación de entrada
+    svg.append("defs")
+        .append("clipPath")
+        .attr("id", "rect-clip")
+        .append("rect")
+        .attr("width", 0)
+        .attr("height", height)
         .transition()
-        .duration(1000)
-        .ease(d3.easeCubicOut)
-        .delay((d, i) => i * 50) 
-        .attr("y", d => y(d.total))
-        .attr("height", d => height - y(d.total));
+        .duration(2200)
+        .ease(d3.easeCubicInOut)
+        .attr("width", width);
 
-    // 7. Leyenda Elegante
-    const legend = svg.append("g")
-        .attr("transform", `translate(${width - 150}, ${-30})`);
+    const mainGroup = svg.append("g").attr("clip-path", "url(#rect-clip)");
 
-    const legendItems = [
-        { label: "Hotel Ciudad", color: "url(#gradCity)" },
-        { label: "Resort Algarve", color: "url(#gradResort)" }
+    // 5. Dibujar Relleno de Áreas
+    mainGroup.selectAll(".area")
+        .data(series)
+        .join("path")
+        .attr("fill", d => d.key === "City Hotel" ? "#3e84a8" : "#ffcc33")
+        .attr("opacity", 0.6)
+        .attr("d", areaGen);
+
+    // 6. Dibujar Líneas de Contorno (Resaltado)
+    mainGroup.selectAll(".line")
+        .data(series)
+        .join("path")
+        .attr("fill", "none")
+        .attr("stroke", d => d.key === "City Hotel" ? "#2C5F78" : "#E1AD01")
+        .attr("stroke-width", 3)
+        .attr("stroke-linecap", "round")
+        .attr("d", lineGen);
+
+    // 7. EL PICO DE AGOSTO (Anotación recuperada)
+    const augustData = nestedData.find(d => d.month === "August");
+    const peakY = y(augustData["City Hotel"] + augustData["Resort Hotel"]);
+
+    const annotation = svg.append("g")
+        .attr("transform", `translate(${x("August")}, ${peakY - 15})`)
+        .style("opacity", 0);
+
+    annotation.append("text")
+        .attr("text-anchor", "middle")
+        .text("Pico de Agosto")
+        .style("font-family", "'Inter', sans-serif")
+        .style("font-size", "13px")
+        .style("font-weight", "700")
+        .style("fill", "#1a202c");
+
+    // Aparece suavemente después de que la marea termine de revelarse
+    annotation.transition()
+        .delay(1800)
+        .duration(800)
+        .style("opacity", 0.7);
+
+    // 8. Ejes y Leyenda
+    const xAxis = d3.axisBottom(x).tickFormat(d => d.substring(0, 3));
+    
+    svg.append("g")
+        .attr("transform", `translate(0,${height - margin.top - margin.bottom})`)
+        .call(xAxis)
+        .call(g => g.select(".domain").remove())
+        .selectAll("text")
+        .style("font-family", "'Inter', sans-serif")
+        .style("font-weight", "500")
+        .style("fill", "#666");
+
+    const legend = svg.append("g").attr("transform", `translate(20, -20)`);
+    const labels = [
+        { name: "Lisboa (Urbano)", color: "#3e84a8" },
+        { name: "Algarve (Resort)", color: "#ffcc33" }
     ];
 
-    legendItems.forEach((item, i) => {
-        const li = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
-        li.append("rect").attr("width", 12).attr("height", 12).attr("rx", 3).attr("fill", item.color);
-        li.append("text").attr("x", 20).attr("y", 10).text(item.label)
-          .style("font-size", "12px").style("fill", "#444");
+    labels.forEach((l, i) => {
+        const g = legend.append("g").attr("transform", `translate(${i * 180}, 0)`);
+        g.append("rect").attr("width", 14).attr("height", 14).attr("rx", 4).attr("fill", l.color);
+        g.append("text").attr("x", 22).attr("y", 12).text(l.name)
+            .style("font-family", "'Inter', sans-serif").style("font-size", "14px").style("font-weight", "600");
     });
 }
