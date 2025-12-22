@@ -1,14 +1,311 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scrolly telling</title>
-    <link rel="stylesheet" href="../style.css" />
-  </head>
-  <body>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrollytelling: Hotel Booking Demand</title>
+    
+    <!-- Librerías Externas -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script src="https://unpkg.com/scrollama"></script>
+
+    <style>
+:root {
+        /* Colores más neutros para eliminar el tinte azul */
+        --bg-color: #ffffff;
+        --text-color: #1a1a1a;
+        --accent-color: #1a202c; /* Gris carbón neutro */
+        --glass-white: rgba(255, 255, 255, 0.12); /* Más transparente */
+    }
+
+    body {
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        margin: 0;
+        color: var(--text-color);
+        
+        /* --- FONDO NEUTRO CON CALÇADA --- */
+        background-image: 
+            /* Capa 1: Overlay blanco neutro (menos azulado que el anterior) */
+            linear-gradient(rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.82)),
+            url('./assets/calcada.jpeg');
+        
+        background-attachment: fixed;
+        background-size: cover;
+        background-position: center;
+    }
+
+    header {
+        height: 30vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        /* Oscurecido neutro para el header */
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                    url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1350&q=80');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
+        margin-bottom: 4rem;
+    }
+
+    #scrolly {
+        position: relative;
+        display: flex;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    article {
+        position: relative;
+        padding: 0 2rem;
+        width: 40%;
+    }
+
+    /* --- PANEL DE GRÁFICO (MÁS TRANSPARENTE Y NEUTRO) --- */
+    .sticky-graphic {
+        position: -webkit-sticky;
+        position: sticky;
+        width: 60%;
+        height: 65vh;
+        top: 15vh;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        /* Aumento de transparencia y reducción de saturación */
+        background: rgba(255, 255, 255, 0.12); 
+        backdrop-filter: blur(20px) saturate(110%);
+        -webkit-backdrop-filter: blur(20px) saturate(110%);
+        
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        
+        box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.1);
+        z-index: 5;
+    }
+
+    #viz {
+        width: 90%;
+        height: 90%;
+    }
+
+    /* --- STEPS DE TEXTO: MÁS TRANSPARENTES --- */
+    .step {
+        margin: 0 auto 35rem auto;
+        
+        /* Estado base: Casi invisible, solo el blur delata el cristal */
+        background: rgba(255, 255, 255, 0.03); 
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        
+        padding: 2.5rem;
+        border-radius: 24px;
+        
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        /* Eliminado el tinte azul del borde izquierdo */
+        border-left: 4px solid rgba(0, 0, 0, 0.05); 
+        
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.03);
+        
+        transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        opacity: 0.25;
+        transform: scale(0.94);
+    }
+
+    .step:last-child {
+        margin-bottom: 25vh;
+    }
+
+    /* Estado Activo: Iluminación neutra */
+    .step.is-active {
+        opacity: 1;
+        transform: scale(1) translateX(25px);
+        
+        /* Transparencia aumentada en activo (0.1) */
+        background: rgba(255, 255, 255, 0.1); 
+        
+        backdrop-filter: blur(18px) saturate(100%);
+        -webkit-backdrop-filter: blur(18px) saturate(100%);
+        
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        border-left: 8px solid var(--accent-color); 
+        
+        box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.08);
+    }
+
+    .step h2 {
+        margin-top: 0;
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--accent-color);
+    }
+
+    .step p {
+        line-height: 1.7;
+        font-size: 1.1rem;
+        color: #4a4a4a; /* Gris neutro */
+    }
+
+    .step.is-active p {
+        color: #000000;
+    }
+
+    footer {
+        height: 15vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #111111; /* Negro puro para el final */
+        color: rgba(255,255,255,0.7);
+        clip-path: polygon(0 20%, 100% 0, 100% 100%, 0 100%);
+    }
+</style>
+</head>
+<body>
+
     <header>
-      <h1>Scrollytelling</h1>
+        <h1>Análisis de Demanda Hotelera</h1>
+        <p>Una historia de datos procesada con DuckDB-wasm y visualizada con D3.js</p>
     </header>
-  </body>
+
+    <main>
+        <section id="scrolly">
+            <!-- Gráfico Fijo -->
+            <figure class="sticky-graphic">
+                <div id="viz"></div>
+            </figure>
+
+            <!-- Narrativa Deslizable -->
+            <article>
+                <div class="step" data-step="overview">
+                    <h2>¿Cuándo viajan los turistas?</h2>
+                    <p>Utilizando un conjunto de datos de dos hoteles en Portugal (H1: Resort y H2: Ciudad), exploramos la estacionalidad.</p>
+                    <p><b>DuckDB</b> procesa en milisegundos las 119,390 filas para mostrarnos que, mientras el Resort tiene picos extremos en verano, el Hotel de Ciudad mantiene una demanda más constante.</p>
+                </div>
+
+                <div class="step" data-step="cancellations">
+                    <h2>La Incertidumbre del Check-in</h2>
+                    <p>El gran problema del sector es la cancelación. Casi el <b>37% de las reservas totales</b> se cancelan.</p>
+                    <p>Observe la disparidad: el hotel urbano sufre mucho más la volatilidad del cliente que el complejo vacacional en el Algarve.</p>
+                </div>
+
+                <div class="step" data-step="nationality">
+                    <h2>Un Destino Sin Fronteras</h2>
+                    <p>Portugal atrae a todo el mundo. El Reino Unido (GBR) lidera el turismo internacional, seguido de cerca por Francia y España.</p>
+                    <p>Este análisis en tiempo real identifica el Top 10 de mercados emisores, permitiendo optimizar las campañas de marketing por país.</p>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>Visualización de Datos - PAC Narrativa - 2025</p>
+    </footer>
+
+    <!-- Lógica de Datos y Scroll -->
+    <script type="module">
+        import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/+esm";
+        import { drawOverview } from "./js/overview.js";
+        import { drawCancellations } from "./js/cancellations.js";
+        import { drawNationality } from "./js/nationality.js";
+
+        // Configuración DuckDB-wasm
+        const MANUAL_BUNDLES = {
+            mvp: {
+                mainModule: "duckdb-mvp.wasm",
+                mainWorker: "../duckdb/duckdb-browser-mvp.worker.js",
+            },
+            eh: {
+                mainModule: "duckdb-eh.wasm",
+                mainWorker: "../duckdb/duckdb-browser-eh.worker.js",
+            },
+        };
+
+        let conn, db;
+
+        async function initDuckDB() {
+            const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+            const worker = new Worker(bundle.mainWorker);
+            const logger = new duckdb.ConsoleLogger();
+            db = new duckdb.AsyncDuckDB(logger, worker);
+            await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+            conn = await db.connect();
+            
+            window.duckdb_conn = conn;
+            window.duckdb_db = db;
+        }
+
+        async function ensureHotelsTable() {
+            const tables = await conn.query("PRAGMA show_tables");
+            const names = tables.toArray().map(r => r.name);
+            
+            if (!names.includes("hotels")) {
+                const resp = await fetch("data/hotel_bookings.parquet");
+                if (!resp.ok) throw new Error("Fallo al cargar parquet");
+                
+                const buffer = await resp.arrayBuffer();
+                await db.registerFileBuffer("hotels_local.parquet", new Uint8Array(buffer));
+                await conn.query(
+                    `CREATE TABLE hotels AS SELECT * FROM read_parquet('hotels_local.parquet')`
+                );
+            }
+        }
+
+        // Manejador del Scroll
+        async function handleStepEnter(response) {
+            // Activar clase CSS
+            d3.selectAll('.step').classed('is-active', (d, i) => i === response.index);
+            
+            const step = response.element.dataset.step;
+            await ensureHotelsTable();
+
+            if (step === "overview") {
+                const res = await conn.query(`
+                    SELECT arrival_date_month, hotel, COUNT(*) as total 
+                    FROM hotels GROUP BY 1, 2
+                `);
+                drawOverview("#viz", res.toArray());
+            } 
+            else if (step === "cancellations") {
+                const res = await conn.query(`
+                    SELECT hotel, is_canceled, COUNT(*) as count 
+                    FROM hotels GROUP BY 1, 2
+                `);
+                drawCancellations("#viz", res.toArray());
+            } 
+            else if (step === "nationality") {
+                const res = await conn.query(`
+                    SELECT country, COUNT(*) as count 
+                    FROM hotels WHERE country != 'NULL' 
+                    GROUP BY 1 ORDER BY 2 DESC LIMIT 10
+                `);
+                drawNationality("#viz", res.toArray());
+            }
+        }
+
+        // Inicialización General
+        async function main() {
+            await initDuckDB();
+            
+            const scroller = scrollama();
+            scroller
+                .setup({
+                    step: "#scrolly article .step",
+                    offset: 0.5,
+                    debug: false
+                })
+                .onStepEnter(handleStepEnter);
+
+            window.addEventListener("resize", scroller.resize);
+        }
+
+        main();
+    </script>
+</body>
 </html>
