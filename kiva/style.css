@@ -96,3 +96,83 @@ body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh;
 .panel-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
 .panel-header h3 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
 .kpi-value { font-size: 1.5rem; font-weight: 700; color: var(--kiva-green); }
+
+/* ESTILOS DE LA INTRODUCCIÓN */
+.intro-container {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at center, rgba(56, 189, 248, 0.1) 0%, transparent 70%);
+}
+
+.intro-content {
+    max-width: 900px; text-align: center;
+}
+
+.main-title {
+    font-size: 3rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem;
+    letter-spacing: -2px;
+}
+
+.text-gradient {
+    background: linear-gradient(to right, var(--accent), var(--kiva-green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.intro-lead {
+    font-size: 1.25rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 2rem;
+}
+
+/* Tarjetas de Preguntas */
+.question-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;
+}
+
+.q-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+    padding: 1.5rem; border-radius: 12px; text-align: left;
+    transition: transform 0.3s;
+}
+.q-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+.q-card i { font-size: 2rem; color: var(--accent); margin-bottom: 1rem; display: block; }
+.q-card p { font-size: 0.95rem; color: var(--text-main); margin: 0; }
+
+/* Botón Start */
+.start-btn {
+    background: var(--accent); color: var(--bg-dark);
+    border: none; padding: 1rem 3rem; font-size: 1.1rem; font-weight: 700;
+    border-radius: 50px; cursor: pointer; transition: all 0.3s;
+    display: inline-flex; align-items: center; gap: 10px;
+}
+.start-btn:hover { background: #fff; transform: scale(1.05); box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); }
+
+/* --- PANELES DE ANÁLISIS (DASHBOARDS) --- */
+
+/* Macro Sidebar */
+.analysis-panel {
+    border-left: 4px solid var(--poverty-low, #f1c40f); /* Amarillo alerta */
+    background: rgba(241, 196, 15, 0.05);
+}
+.analysis-panel h4 { color: #f1c40f; margin-bottom: 0.5rem; font-size: 1rem; }
+.analysis-panel p { font-size: 0.9rem; line-height: 1.5; color: var(--text-muted); }
+.analysis-panel strong { color: #fff; }
+
+/* Micro Scatter Header */
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.insight-mini-box {
+    background: rgba(155, 89, 182, 0.1); /* Morado */
+    border: 1px solid rgba(155, 89, 182, 0.3);
+    border-radius: 8px; padding: 0.5rem 1rem;
+    max-width: 400px; display: flex; gap: 10px; align-items: center;
+}
+.insight-mini-box i { color: #9b59b6; font-size: 1.2rem; }
+.insight-mini-box p { font-size: 0.85rem; margin: 0; color: var(--text-muted); }
+
+/* Micro Gender Text */
+.insight-text-small {
+    font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;
+    font-style: italic; border-left: 2px solid var(--kiva-green); padding-left: 10px;
+}
+
+/* Iconos de Nav */
+.step-icon { font-size: 1.5rem; color: var(--accent); }
+.step-title-mini { font-weight: 700; font-size: 0.9rem; }

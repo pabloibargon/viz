@@ -11,100 +11,155 @@
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 </head>
 <body>
-
-    <!-- FONDO AMBIENTAL -->
     <div class="bg-decoration"></div>
-
-    <!-- PANTALLA DE CARGA (DuckDB Init) -->
     <div id="loader" class="loader-overlay">
         <div class="spinner"></div>
-        <p id="loading-text">Inicializando Motor de Datos...</p>
+        <p id="loading-text">Iniciando aplicación...</p>
     </div>
 
     <div class="main-container">
         
-        <!-- NAVEGACIÓN NARRATIVA -->
+        <!-- NAVEGACIÓN (Añadimos el paso de Inicio) -->
         <nav class="story-nav glass-panel">
-            <div class="nav-step active" onclick="app.switchView('macro')">
+            <div class="nav-step active" onclick="app.switchView('intro')">
+                <i class='bx bx-home-alt-2 step-icon'></i>
+                <span class="step-title-mini">Inicio</span>
+            </div>
+            <div class="nav-connector"></div>
+            <div class="nav-step" onclick="app.switchView('macro')">
                 <span class="step-num">01</span>
                 <div class="step-info">
-                    <span class="step-title">Geografía de la Necesidad</span>
-                    <span class="step-desc">Pobreza (MPI) vs. Flujo de Capital</span>
+                    <span class="step-title">Geografía</span>
                 </div>
             </div>
-            
             <div class="nav-connector"></div> 
-
             <div class="nav-step" onclick="app.switchView('micro')">
                 <span class="step-num">02</span>
                 <div class="step-info">
-                    <span class="step-title">La Velocidad del Éxito</span>
-                    <span class="step-desc">Brecha Digital y Género</span>
+                    <span class="step-title">Brecha y Género</span>
                 </div>
             </div>
         </nav>
 
-        <!-- CONTENIDO DINÁMICO -->
         <div class="dashboard-content">
             
-            <!-- VISTA 1: MACRO (Mapa + Sectores) -->
-            <section id="view-macro" class="dashboard-view active-view">
-                <!-- Grid específico para Macro -->
+            <!-- VISTA 0: INTRODUCCIÓN (NUEVA) -->
+            <section id="view-intro" class="dashboard-view active-view">
+                <div class="intro-container glass-panel">
+                    <div class="intro-content">
+                        <h1 class="main-title">KIVA: <span class="text-gradient">Historias de Microcrédito</span></h1>
+                        <p class="intro-lead">
+                            Un análisis visual sobre cómo fluye el capital global hacia los emprendedores locales, 
+                            cruzando datos de <strong>600,000 préstamos</strong> con indicadores de 
+                            <strong>Pobreza (MPI)</strong> y <strong>Brecha Digital</strong>.
+                        </p>
+                        <p>
+			Kiva es una organización sin fines de lucro que conecta a personas que quieren prestar pequeñas cantidades de dinero con emprendedores y familias de bajos recursos en distintas partes del mundo. A través de su plataforma online, los usuarios pueden prestar desde montos pequeños para apoyar proyectos como pequeños negocios, estudios o mejoras del hogar, principalmente en países en desarrollo, aunque también en algunos desarrollados. El dinero no se dona, se presta: cuando el beneficiario devuelve el préstamo, el prestamista puede retirar el dinero o volver a prestarlo a otra persona.
+                        </p>
+			<br>
+                        
+                        <div class="research-questions">
+                            <h3>Preguntas de Investigación:</h3>
+			    <br>
+                            <div class="question-grid">
+                                <div class="q-card">
+                                    <i class='bx bx-map-pin'></i>
+                                    <p>¿Llega el dinero a las zonas de pobreza extrema o se queda en economías emergentes?</p>
+                                </div>
+                                <div class="q-card">
+                                    <i class='bx bx-female-sign'></i>
+                                    <p>¿Existe un sesgo de eficiencia a favor de las mujeres emprendedoras?</p>
+                                </div>
+                                <div class="q-card">
+                                    <i class='bx bx-wifi'></i>
+                                    <p>¿Es la falta de Internet una barrera insalvable para conseguir financiación?</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="start-btn" onclick="app.switchView('macro')">
+                            Comenzar el Análisis <i class='bx bx-right-arrow-alt'></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA 1: MACRO (Modificada con texto) -->
+            <section id="view-macro" class="dashboard-view hidden-view">
                 <div class="grid-macro">
-                    <!-- Mapa Principal -->
+                    <!-- Mapa -->
                     <div class="glass-panel map-area">
                         <div class="panel-header">
                             <h3><i class='bx bx-world'></i> Distribución Global de Ayuda</h3>
-                            <!-- Filtros globales del mapa irían aquí -->
-                            <div class="controls">
-                                <span class="badge">Filtrar por Click</span>
-                            </div>
+                            <div class="controls"><span class="badge">Click en país para filtrar</span></div>
                         </div>
                         <div id="viz-map" class="chart-container"></div>
                     </div>
 
-                    <!-- Panel Lateral (Sectores + KPIs) -->
+                    <!-- Sidebar con ANÁLISIS -->
                     <div class="sidebar-area">
+                        <!-- Nuevo Bloque de Análisis -->
+                        <div class="glass-panel analysis-panel">
+                            <h4><i class='bx bx-bulb'></i> Análisis: La Paradoja de la Ayuda</h4>
+                            <p>
+                                Los datos sugieren que el capital fluye más hacia <strong>países con MPI moderado</strong> (Tonos oscuros/violetas) 
+                                que hacia zonas de pobreza extrema (Tonos amarillos/brillantes). 
+                                <br><br>
+                                Esto indica una correlación entre <em>estabilidad estructural</em> y capacidad de captar fondos.
+                            </p>
+                        </div>
+
                         <div class="glass-panel kpi-panel">
-                            <div class="kpi-card">
+                            <!-- KPIs existentes... -->
+                             <div class="kpi-card">
                                 <label>Total Financiado</label>
                                 <span id="kpi-total-amount" class="kpi-value">---</span>
                             </div>
                             <div class="kpi-card">
-                                <label>Países Activos</label>
+                                <label>Países</label>
                                 <span id="kpi-total-countries" class="kpi-value">---</span>
                             </div>
                         </div>
                         
                         <div class="glass-panel sector-panel">
-                            <h3>Sectores Top</h3>
+                            <h3>Sectores Dominantes</h3>
                             <div id="viz-sectors" class="chart-container"></div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- VISTA 2: MICRO (Scatter + Análisis) -->
+            <!-- VISTA 2: MICRO (Modificada con texto) -->
             <section id="view-micro" class="dashboard-view hidden-view">
                 <div class="grid-micro">
-                    <!-- Scatter Plot Principal -->
+                    <!-- Scatter + Texto -->
                     <div class="glass-panel scatter-area">
-                        <div class="panel-header">
-                            <h3><i class='bx bx-scatter-chart'></i> La Paradoja Digital</h3>
-                            <p class="subtitle">Uso de Internet vs. Monto del Préstamo</p>
+                        <div class="header-row">
+                            <div class="header-titles">
+                                <h3><i class='bx bx-scatter-chart'></i> La Paradoja Digital</h3>
+                                <p class="subtitle">Cada punto es un grupo demográfico por país</p>
+                            </div>
+                            <!-- Texto explicativo integrado -->
+                            <div class="insight-mini-box">
+                                <i class='bx bx-info-circle'></i>
+                                <p>A mayor acceso a Internet, <strong>no siempre</strong> aumenta el monto del préstamo. 
+                                Las mujeres (Púrpura) tienden a pedir montos menores incluso en países conectados.</p>
+                            </div>
                         </div>
                         <div id="viz-scatter" class="chart-container"></div>
                     </div>
 
-                    <!-- Gráfico de Género -->
+                    <!-- Género + Texto -->
                     <div class="glass-panel gender-area">
-                        <h3>Brecha de Género</h3>
+                        <h3>Eficiencia por Género</h3>
+                        <div class="insight-text-small">
+                            Las mujeres financian sus proyectos más rápido (menos días), sugiriendo mayor confianza de los prestamistas.
+                        </div>
                         <div id="viz-gender" class="chart-container"></div>
                     </div>
 
-                    <!-- Gráfico de Eficiencia (Tiempo) -->
                     <div class="glass-panel time-area">
-                        <h3>Tiempo de Financiación</h3>
+                        <h3>Distribución de Tiempo</h3>
                         <div id="viz-time" class="chart-container"></div>
                     </div>
                 </div>
@@ -112,8 +167,5 @@
 
         </div>
     </div>
-
-    <!-- MÓDULO JS (Type Module para imports ES6) -->
     <script type="module" src="app.js"></script>
-</body>
 </html>

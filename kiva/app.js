@@ -39,7 +39,7 @@ async function init() {
         document.getElementById('loader').style.opacity = 0;
         setTimeout(() => document.getElementById('loader').remove(), 500);
         
-        switchView('macro');
+        switchView('intro');
 
     } catch (err) {
         console.error(err);
@@ -48,23 +48,33 @@ async function init() {
 }
 function updateLoader(msg) { document.getElementById('loading-text').innerText = msg; }
 
-// ... (switchView se mantiene igual) ...
 async function switchView(viewName) {
     state.currentView = viewName;
 
+    // 1. UI Nav Updates (Manejo de clases active)
     document.querySelectorAll('.nav-step').forEach(el => el.classList.remove('active'));
-    const activeBtn = [...document.querySelectorAll('.nav-step')].find(el => el.getAttribute('onclick').includes(viewName));
+    
+    // Lógica para encontrar el botón correcto
+    const activeBtn = [...document.querySelectorAll('.nav-step')].find(el => {
+        const onclick = el.getAttribute('onclick');
+        return onclick && onclick.includes(`'${viewName}'`);
+    });
     if(activeBtn) activeBtn.classList.add('active');
 
+    // 2. Mostrar Contenedor
     document.querySelectorAll('.dashboard-view').forEach(el => {
         el.classList.add('hidden-view');
         el.classList.remove('active-view');
     });
+    
     const target = document.getElementById(`view-${viewName}`);
-    target.classList.remove('hidden-view');
-    target.classList.add('active-view');
+    if(target) {
+        target.classList.remove('hidden-view');
+        target.classList.add('active-view');
+    }
 
-    if (!state.viewsLoaded[viewName]) {
+    // 3. Lazy Load (Solo cargamos datos si NO es la intro)
+    if (viewName !== 'intro' && !state.viewsLoaded[viewName]) {
         if (viewName === 'macro') await loadMacroDashboard();
         if (viewName === 'micro') await loadMicroDashboard();
         state.viewsLoaded[viewName] = true;
