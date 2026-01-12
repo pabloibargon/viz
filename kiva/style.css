@@ -1,0 +1,98 @@
+:root {
+    --bg-dark: #0f172a;
+    --glass-bg: rgba(30, 41, 59, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --accent: #38bdf8;
+    --kiva-green: #2ecc71;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --gap: 1.25rem;
+}
+
+/* Reset Básico */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh; overflow: hidden; }
+
+/* Fondo Ambiental */
+.bg-decoration {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
+    background: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(46, 204, 113, 0.08) 0%, transparent 40%);
+}
+
+/* Contenedor Principal */
+.main-container {
+    max-width: 1600px; margin: 0 auto; height: 100vh;
+    padding: var(--gap); display: flex; flex-direction: column; gap: var(--gap);
+}
+
+/* --- MÓDULO: Glass Panel --- */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px; padding: 1.25rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    display: flex; flex-direction: column;
+}
+
+/* --- NAVEGACIÓN --- */
+.story-nav {
+    flex: 0 0 80px; /* Altura fija */
+    flex-direction: row; align-items: center; justify-content: center; gap: 2rem;
+}
+.nav-step {
+    display: flex; align-items: center; gap: 1rem; cursor: pointer;
+    opacity: 0.4; transition: all 0.3s ease; padding: 0.5rem 1rem; border-radius: 8px;
+}
+.nav-step:hover { opacity: 0.8; background: rgba(255,255,255,0.05); }
+.nav-step.active { opacity: 1; border: 1px solid var(--accent); background: rgba(56, 189, 248, 0.1); }
+.step-num { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+.step-title { display: block; font-weight: 600; font-size: 0.9rem; }
+.step-desc { font-size: 0.75rem; color: var(--text-muted); }
+.nav-connector { width: 60px; height: 2px; background: var(--glass-border); }
+
+/* --- DASHBOARDS --- */
+.dashboard-content { flex: 1; position: relative; overflow: hidden; }
+.dashboard-view { width: 100%; height: 100%; position: absolute; top: 0; left: 0; transition: opacity 0.5s ease; }
+.hidden-view { opacity: 0; pointer-events: none; z-index: -1; }
+.active-view { opacity: 1; z-index: 1; }
+
+.chart-container { flex: 1; width: 100%; min-height: 0; /* Fix flex overflow */ position: relative;}
+
+/* --- GRID: MACRO --- */
+.grid-macro {
+    display: grid; height: 100%; gap: var(--gap);
+    grid-template-columns: 3fr 1fr; /* Mapa grande | Sidebar pequeño */
+}
+.sidebar-area { display: flex; flex-direction: column; gap: var(--gap); }
+.kpi-panel { flex: 0 0 auto; flex-direction: row; justify-content: space-around; }
+.sector-panel { flex: 1; }
+
+/* --- GRID: MICRO --- */
+.grid-micro {
+    display: grid; height: 100%; gap: var(--gap);
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 2fr 1fr;
+    grid-template-areas: 
+        "scatter gender"
+        "scatter time";
+}
+.scatter-area { grid-area: scatter; }
+.gender-area { grid-area: gender; }
+.time-area { grid-area: time; }
+
+/* --- LOADING --- */
+.loader-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg-dark); z-index: 999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 0.5s;
+}
+.spinner { width: 40px; height: 40px; border: 4px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Helpers de Texto */
+.panel-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
+.panel-header h3 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+.kpi-value { font-size: 1.5rem; font-weight: 700; color: var(--kiva-green); }

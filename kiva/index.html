@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiva: La Historia en Dos Actos</title>
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Iconos para UI -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+
+    <!-- FONDO AMBIENTAL -->
+    <div class="bg-decoration"></div>
+
+    <!-- PANTALLA DE CARGA (DuckDB Init) -->
+    <div id="loader" class="loader-overlay">
+        <div class="spinner"></div>
+        <p id="loading-text">Inicializando Motor de Datos...</p>
+    </div>
+
+    <div class="main-container">
+        
+        <!-- NAVEGACIÓN NARRATIVA -->
+        <nav class="story-nav glass-panel">
+            <div class="nav-step active" onclick="app.switchView('macro')">
+                <span class="step-num">01</span>
+                <div class="step-info">
+                    <span class="step-title">Geografía de la Necesidad</span>
+                    <span class="step-desc">Pobreza (MPI) vs. Flujo de Capital</span>
+                </div>
+            </div>
+            
+            <div class="nav-connector"></div> 
+
+            <div class="nav-step" onclick="app.switchView('micro')">
+                <span class="step-num">02</span>
+                <div class="step-info">
+                    <span class="step-title">La Velocidad del Éxito</span>
+                    <span class="step-desc">Brecha Digital y Género</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- CONTENIDO DINÁMICO -->
+        <div class="dashboard-content">
+            
+            <!-- VISTA 1: MACRO (Mapa + Sectores) -->
+            <section id="view-macro" class="dashboard-view active-view">
+                <!-- Grid específico para Macro -->
+                <div class="grid-macro">
+                    <!-- Mapa Principal -->
+                    <div class="glass-panel map-area">
+                        <div class="panel-header">
+                            <h3><i class='bx bx-world'></i> Distribución Global de Ayuda</h3>
+                            <!-- Filtros globales del mapa irían aquí -->
+                            <div class="controls">
+                                <span class="badge">Filtrar por Click</span>
+                            </div>
+                        </div>
+                        <div id="viz-map" class="chart-container"></div>
+                    </div>
+
+                    <!-- Panel Lateral (Sectores + KPIs) -->
+                    <div class="sidebar-area">
+                        <div class="glass-panel kpi-panel">
+                            <div class="kpi-card">
+                                <label>Total Financiado</label>
+                                <span id="kpi-total-amount" class="kpi-value">---</span>
+                            </div>
+                            <div class="kpi-card">
+                                <label>Países Activos</label>
+                                <span id="kpi-total-countries" class="kpi-value">---</span>
+                            </div>
+                        </div>
+                        
+                        <div class="glass-panel sector-panel">
+                            <h3>Sectores Top</h3>
+                            <div id="viz-sectors" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VISTA 2: MICRO (Scatter + Análisis) -->
+            <section id="view-micro" class="dashboard-view hidden-view">
+                <div class="grid-micro">
+                    <!-- Scatter Plot Principal -->
+                    <div class="glass-panel scatter-area">
+                        <div class="panel-header">
+                            <h3><i class='bx bx-scatter-chart'></i> La Paradoja Digital</h3>
+                            <p class="subtitle">Uso de Internet vs. Monto del Préstamo</p>
+                        </div>
+                        <div id="viz-scatter" class="chart-container"></div>
+                    </div>
+
+                    <!-- Gráfico de Género -->
+                    <div class="glass-panel gender-area">
+                        <h3>Brecha de Género</h3>
+                        <div id="viz-gender" class="chart-container"></div>
+                    </div>
+
+                    <!-- Gráfico de Eficiencia (Tiempo) -->
+                    <div class="glass-panel time-area">
+                        <h3>Tiempo de Financiación</h3>
+                        <div id="viz-time" class="chart-container"></div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- MÓDULO JS (Type Module para imports ES6) -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
