@@ -106,7 +106,7 @@ body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh;
 }
 
 .intro-content {
-    max-width: 900px; text-align: center;
+    max-width: 1200px; text-align: center;
 }
 
 .main-title {
@@ -125,7 +125,11 @@ body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh;
 
 /* Tarjetas de Preguntas */
 .question-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+	gap: 1.5rem; margin-bottom: 3rem;
+
+    width:100%;
 }
 
 .q-card {
@@ -135,7 +139,12 @@ body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh;
 }
 .q-card:hover { transform: translateY(-5px); border-color: var(--accent); }
 .q-card i { font-size: 2rem; color: var(--accent); margin-bottom: 1rem; display: block; }
-.q-card p { font-size: 0.95rem; color: var(--text-main); margin: 0; }
+.q-card p {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--text-main);
+    margin: 0;
+}
 
 /* Botón Start */
 .start-btn {
@@ -188,6 +197,8 @@ body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh;
     opacity: 1;
     overflow: hidden; /* Importante para que el contenido no se salga al cerrar */
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-wrap: wrap;
+    height: auto;
 }
 
 .filter-bar.collapsed {
@@ -212,7 +223,8 @@ body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh;
     background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
     color: #fff; padding: 5px 10px; border-radius: 6px;
     font-family: inherit; font-size: 0.9rem; cursor: pointer;
-    min-width: 150px;
+    min-width: 120px;
+    max-width: 200px;
 }
 
 .filter-bar select:focus { outline: none; border-color: var(--accent); }

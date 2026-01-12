@@ -11,15 +11,59 @@ const COLORS = {
     povertyLow: "#f1c40f", // MPI Bajo (Amarillo)
     povertyHigh: "#e74c3c" // MPI Alto (Rojo)
 };
+//
+// ==========================================
+// TOOLTIP GLOBAL COMPARTIDO
+// ==========================================
+const tooltip = d3.select("body").append("div")
+    .attr("class", "custom-tooltip")
+    .style("position", "absolute")
+    .style("visibility", "hidden")
+    .style("background", "rgba(15, 23, 42, 0.95)")
+    .style("border", "1px solid #38bdf8")
+    .style("padding", "10px")
+    .style("border-radius", "8px")
+    .style("color", "#fff")
+    .style("font-size", "0.85rem")
+    .style("pointer-events", "none")
+    .style("z-index", "9999")
+    .style("box-shadow", "0 4px 15px rgba(0,0,0,0.5)")
+    .style("transition", "opacity 0.2s"); // Suavizado extra
+
+// Helper para mostrar
+function showTooltip(event, htmlContent) {
+    tooltip.html(htmlContent)
+        .style("visibility", "visible")
+        .style("opacity", 1)
+        .style("top", (event.pageY - 10) + "px")
+        .style("left", (event.pageX + 15) + "px");
+}
+
+// Helper para ocultar
+function hideTooltip() {
+    tooltip.style("visibility", "hidden").style("opacity", 0);
+}
 
 function buildWhereClause(filters) {
-    let clauses = ["1=1"]; // Truco: siempre verdadero para poder añadir ANDs
+    let clauses = ["1=1"]; 
     
-    if (filters.country !== 'All') {
-        clauses.push(`country = '${filters.country}'`);
-    }
-    if (filters.sector !== 'All') {
-        clauses.push(`sector = '${filters.sector}'`);
+    if (filters) {
+        if (filters.country && filters.country !== 'All') {
+            clauses.push(`country = '${filters.country}'`);
+        }
+        if (filters.sector && filters.sector !== 'All') {
+            clauses.push(`sector = '${filters.sector}'`);
+        }
+        // NUEVO: Activity (con escape de comillas simples)
+        if (filters.activity && filters.activity !== 'All') {
+            // Reemplazamos ' por '' para evitar errores SQL
+            const safeActivity = filters.activity.replace(/'/g, "''");
+            clauses.push(`activity = '${safeActivity}'`);
+        }
+        // NUEVO: Currency
+        if (filters.currency && filters.currency !== 'All') {
+            clauses.push(`currency = '${filters.currency}'`);
+        }
     }
     
     return "WHERE " + clauses.join(" AND ");
@@ -30,23 +74,6 @@ function buildWhereClause(filters) {
 // ============================================================================
 
 // Variable para guardar el estado del tooltip y no recrearlo mil veces
-let tooltip = d3.select("body").select(".custom-tooltip");
-if (tooltip.empty()) {
-    tooltip = d3.select("body").append("div")
-        .attr("class", "custom-tooltip")
-        .style("position", "absolute")
-        .style("visibility", "hidden")
-        .style("background", "rgba(15, 23, 42, 0.95)") // Fondo oscuro
-        .style("border", "1px solid #38bdf8") // Borde azul accent
-        .style("padding", "10px")
-        .style("border-radius", "8px")
-        .style("color", "#fff")
-        .style("font-size", "0.85rem")
-        .style("pointer-events", "none") // Para que no moleste al mouse
-        .style("z-index", "1000")
-        .style("box-shadow", "0 4px 15px rgba(0,0,0,0.5)");
-}
-
 async function drawMap(selector, data) {
     const container = d3.select(selector);
     container.html("");
@@ -332,9 +359,29 @@ function drawScatter(selector, data) {
         .attr("stroke-width", 1)
         .attr("r", 0); // ESTADO INICIAL: Radio 0 (invisible)
 
-    // 2. Agregar el Tooltip (title) AHORA, antes de la transición
-    circles.append("title")
-        .text(d => `${d.country} (${d.gender_clean})\nInternet: ${Math.round(d.internet_pct)}%\nAvg Loan: $${Math.round(d.avg_amount)}`);
+    // 2. INTERACCIÓN CON TOOLTIP (Reemplaza al title)
+    circles
+        .on("mouseover", function(event, d) {
+            d3.select(this).attr("opacity", 1).attr("stroke", "#fff"); // Resaltar punto
+            
+            const genderColor = d.gender_clean === 'female' ? COLORS.purple : COLORS.green;
+            const genderLabel = d.gender_clean === 'female' ? 'Mujeres' : 'Hombres';
+
+            showTooltip(event, `
+                <strong style="font-size:1rem">${d.country}</strong><br/>
+                <span style="color:${genderColor}">●</span> ${genderLabel}<br/>
+                <hr style="border-color:rgba(255,255,255,0.1); margin:5px 0">
+                Internet: <strong>${Math.round(d.internet_pct)}%</strong><br/>
+                Préstamo: <strong>${d3.format("$,.0f")(d.avg_amount)}</strong>
+            `);
+        })
+        .on("mousemove", (event) => {
+            tooltip.style("top", (event.pageY - 10) + "px").style("left", (event.pageX + 15) + "px");
+        })
+        .on("mouseout", function() {
+            d3.select(this).attr("opacity", 0.6).attr("stroke", COLORS.bg); // Volver estado normal
+            hideTooltip();
+        });
 
     // 3. Aplicar la animación (Transición)
     circles.transition()
@@ -378,13 +425,28 @@ function drawGenderLollipops(selector, data) {
         .attr("stroke-width", 1);
 
     // Círculos
+    // Círculos del Lollipop
     svg.selectAll("mycircle")
         .data(data)
         .join("circle")
         .attr("cx", d => x(d.avg_days))
         .attr("cy", d => y(d.gender_clean))
         .attr("r", 8)
-        .attr("fill", d => d.gender_clean === 'female' ? COLORS.purple : COLORS.green);
+        .attr("fill", d => d.gender_clean === 'female' ? COLORS.purple : COLORS.green)
+        .attr("cursor", "pointer") // Manita para indicar interactividad
+        // EVENTOS TOOLTIP
+        .on("mouseover", (event, d) => {
+            const genderLabel = d.gender_clean === 'female' ? 'Mujeres' : 'Hombres';
+            const color = d.gender_clean === 'female' ? COLORS.purple : COLORS.green;
+            
+            showTooltip(event, `
+                <strong style="color:${color}">${genderLabel}</strong><br/>
+                Tiempo Promedio:<br/>
+                <span style="font-size:1.2rem; font-weight:bold">${d.avg_days.toFixed(1)} días</span>
+            `);
+        })
+        .on("mousemove", (event) => tooltip.style("top", (event.pageY - 10) + "px").style("left", (event.pageX + 15) + "px"))
+        .on("mouseout", hideTooltip);
 
     // Etiquetas Y
     svg.append("g").call(d3.axisLeft(y)).select(".domain").remove();
@@ -517,24 +579,32 @@ function drawWordCloud(selector, data, d3CloudLayout) {
     container.html("");
     const { width, height } = getDimensions(container);
 
+    // Escala de tamaño (Ajustada para evitar textos ilegibles o gigantes)
     const sizeScale = d3.scaleLinear()
         .domain(d3.extent(data, d => d.count))
-        .range([20, 90]); // Ajustado tamaño
+        .range([20, 80]); // Min 20px, Max 80px
 
-    // Usamos d3.schemeTableau10 para colores profesionales
+    // Paleta de colores (Tableau10 es variada y profesional)
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
 
+    // Configuración del Layout (D3-Cloud)
     const layout = d3CloudLayout()
         .size([width, height])
-        .words(data.map(d => ({ text: d.word, size: sizeScale(d.count) })))
-        .padding(5)
-        .rotate(() => (~~(Math.random() * 2) * 90))
+        // IMPORTANTE: Pasamos 'originalCount' aquí para recuperarlo en el tooltip
+        .words(data.map(d => ({
+            text: d.word,
+            size: sizeScale(d.count),
+            originalCount: d.count 
+        })))
+        .padding(8) // Espacio entre palabras
+        .rotate(() => (~~(Math.random() * 2) * 90)) // Rotación aleatoria 0 o 90 grados
         .font("Impact")
         .fontSize(d => d.size)
-        .on("end", draw);
+        .on("end", draw); // Al terminar cálculos, llamar a draw
 
     layout.start();
 
+    // Función interna de renderizado
     function draw(words) {
         const svg = container.append("svg")
             .attr("width", layout.size()[0])
@@ -545,20 +615,49 @@ function drawWordCloud(selector, data, d3CloudLayout) {
         const text = svg.selectAll("text")
             .data(words)
             .enter().append("text")
-            .style("font-size", "0px")
+            .style("font-size", "0px") // Empieza en 0 para animar
             .style("font-family", "Impact, sans-serif")
             .style("fill", (d, i) => colorScale(i))
             .attr("text-anchor", "middle")
             .attr("transform", d => "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
-            .text(d => d.text);
+            .text(d => d.text)
+            .style("cursor", "default")
+            
+            // --- INTERACTIVIDAD ---
+            .on("mouseover", function(event, d) {
+                // Efecto visual leve al pasar el mouse
+                d3.select(this).style("opacity", 0.7);
 
+                // Mostrar Tooltip Global
+                showTooltip(event, `
+                    <div style="text-align:center">
+                        <strong style="color:${colorScale(d.text)}; font-size:1.1rem; text-transform:uppercase">
+                            ${d.text}
+                        </strong>
+                        <hr style="border-color:rgba(255,255,255,0.1); margin:5px 0">
+                        <span style="color:#94a3b8">Frecuencia:</span> 
+                        <strong style="color:#fff; font-size:1.1rem">${d.originalCount}</strong>
+                    </div>
+                `);
+            })
+            .on("mousemove", (event) => {
+                // Actualizar posición del tooltip (usando el selector del tooltip global)
+                d3.select(".custom-tooltip")
+                    .style("top", (event.pageY - 10) + "px")
+                    .style("left", (event.pageX + 15) + "px");
+            })
+            .on("mouseout", function() {
+                // Restaurar estado
+                d3.select(this).style("opacity", 1);
+                hideTooltip();
+            });
+
+        // Animación de entrada
         text.transition()
             .duration(600)
-            .delay((d, i) => i * 10)
+            .delay((d, i) => i * 15) // Efecto cascada
             .style("font-size", d => d.size + "px")
             .style("opacity", 1);
-            
-        text.append("title").text(d => `Frecuencia: ${Math.round(d.size)} (escala)`);
     }
 }
 

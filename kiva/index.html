@@ -54,31 +54,49 @@
         </nav>
 
         <div class="dashboard-content">
-            <div class="filter-bar glass-panel collapsed">
-    <div class="filter-group">
-        <label><i class='bx bx-globe'></i> País</label>
-        <select id="filter-country" onchange="app.updateFilters()">
-            <option value="All">Todos los Países</option>
-            <!-- Se llenará dinámicamente -->
-        </select>
-    </div>
+	<div class="filter-bar glass-panel collapsed">
+	    
+	    <!-- 1. PAÍS -->
+	    <div class="filter-group">
+		<label><i class='bx bx-globe'></i> País</label>
+		<select id="filter-country" onchange="app.updateFilters()">
+		    <option value="All">Todos</option>
+		</select>
+	    </div>
 
-    <div class="filter-connector"></div>
+	    <div class="filter-connector"></div>
 
-    <div class="filter-group">
-        <label><i class='bx bx-briefcase'></i> Sector</label>
-        <select id="filter-sector" onchange="app.updateFilters()">
-            <option value="All">Todos los Sectores</option>
-            <!-- Se llenará dinámicamente -->
-        </select>
-    </div>
-    
-    <div class="filter-connector"></div>
+	    <!-- 2. SECTOR -->
+	    <div class="filter-group">
+		<label><i class='bx bx-briefcase'></i> Sector</label>
+		<select id="filter-sector" onchange="app.updateFilters()">
+		    <option value="All">Todos</option>
+		</select>
+	    </div>
+	    
+	    <!-- NUEVO: ACTIVIDAD -->
+	    <div class="filter-connector"></div>
+	    <div class="filter-group">
+		<label><i class='bx bx-run'></i> Actividad</label>
+		<select id="filter-activity" onchange="app.updateFilters()">
+		    <option value="All">Todas</option>
+		</select>
+	    </div>
 
-    <button class="reset-btn" onclick="app.resetFilters()">
-        <i class='bx bx-reset'></i> Reset
-    </button>
-</div>
+	    <!-- NUEVO: MONEDA -->
+	    <div class="filter-connector"></div>
+	    <div class="filter-group">
+		<label><i class='bx bx-money'></i> Moneda</label>
+		<select id="filter-currency" onchange="app.updateFilters()">
+		    <option value="All">Todas</option>
+		</select>
+	    </div>
+
+	    <!-- Botón Reset -->
+	    <button class="reset-btn" onclick="app.resetFilters()">
+		<i class='bx bx-reset'></i>
+	    </button>
+	</div>
             <!-- VISTA 0: INTRODUCCIÓN (NUEVA) -->
             <section id="view-intro" class="dashboard-view active-view">
                 <div class="intro-container glass-panel">
@@ -110,6 +128,10 @@
                                     <i class='bx bx-wifi'></i>
                                     <p>¿Es la falta de Internet una barrera insalvable para conseguir financiación?</p>
                                 </div>
+				<div class="q-card">
+					<i class='bx bx-message-square-dots'></i>
+					<p>¿Qué necesidades reales ocultan los datos? (Semillas, Educación, Sanidad...)</p>
+				    </div>
                             </div>
                         </div>
 

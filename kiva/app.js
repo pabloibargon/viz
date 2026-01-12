@@ -19,7 +19,9 @@ const state = {
     viewsLoaded: { macro: false, micro: false },
     filters: {
         country: 'All',
-        sector: 'All'
+        sector: 'All',
+        activity: 'All',
+        currency: 'All'
     }
 };
 
@@ -88,51 +90,61 @@ async function switchView(viewName) {
 
 async function initFilters() {
     console.log("Cargando opciones de filtro...");
-    
-    // 1. Obtener Países únicos
-    const countries = await state.conn.query(`SELECT DISTINCT country FROM kiva ORDER BY country`);
-    const countrySelect = document.getElementById('filter-country');
-    countries.toArray().forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.country;
-        opt.innerText = r.country;
-        countrySelect.appendChild(opt);
-    });
 
-    // 2. Obtener Sectores únicos
-    const sectors = await state.conn.query(`SELECT DISTINCT sector FROM kiva ORDER BY sector`);
-    const sectorSelect = document.getElementById('filter-sector');
-    sectors.toArray().forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.sector;
-        opt.innerText = r.sector;
-        sectorSelect.appendChild(opt);
-    });
+    // Helper para llenar selects y evitar repetir código
+    const fillSelect = async (id, field) => {
+        // Ordenamos alfabéticamente
+        const res = await state.conn.query(`SELECT DISTINCT ${field} FROM kiva ORDER BY ${field}`);
+        const select = document.getElementById(id);
+        
+        // Limpiar opciones previas (excepto la primera 'All')
+        select.innerHTML = '<option value="All">Todos</option>';
+        
+        res.toArray().forEach(r => {
+            const val = r[field]; // Obtener valor dinámicamente
+            if(val) { // Evitar nulos
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.innerText = val; // Recortar texto si es muy largo visualmente?
+                select.appendChild(opt);
+            }
+        });
+    };
+
+    // Ejecutar las cargas en paralelo para que sea rápido
+    await Promise.all([
+        fillSelect('filter-country', 'country'),
+        fillSelect('filter-sector', 'sector'),
+        fillSelect('filter-activity', 'activity'),
+        fillSelect('filter-currency', 'currency')
+    ]);
 }
 
-// Función llamada por el onchange del HTML
+// MODIFICAR updateFilters()
 async function updateFilters() {
-    // 1. Actualizar Estado
     state.filters.country = document.getElementById('filter-country').value;
     state.filters.sector = document.getElementById('filter-sector').value;
+    // Capturar nuevos valores
+    state.filters.activity = document.getElementById('filter-activity').value;
+    state.filters.currency = document.getElementById('filter-currency').value;
 
     console.log("Filtros aplicados:", state.filters);
 
-    // 2. Invalidar caché de vistas (para forzar recarga)
     state.viewsLoaded = { macro: false, micro: false, cloud: false };
 
-    // 3. Recargar vista actual
     if (state.currentView === 'macro') await loadMacroDashboard();
     else if (state.currentView === 'micro') await loadMicroDashboard();
     else if (state.currentView === 'cloud') await loadCloudDashboard();
 }
 
+// MODIFICAR resetFilters()
 async function resetFilters() {
     document.getElementById('filter-country').value = 'All';
     document.getElementById('filter-sector').value = 'All';
+    document.getElementById('filter-activity').value = 'All';
+    document.getElementById('filter-currency').value = 'All';
     await updateFilters();
 }
-
 function toggleFilters() {
     const filterBar = document.querySelector('.filter-bar');
     const btnIcon = document.querySelector('.nav-toggle-btn i');
