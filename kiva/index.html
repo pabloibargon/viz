@@ -21,6 +21,10 @@
         
         <!-- NAVEGACIÓN (Añadimos el paso de Inicio) -->
         <nav class="story-nav glass-panel">
+	<button class="nav-toggle-btn" onclick="app.toggleFilters()" title="Mostrar/Ocultar Filtros">
+	    <!-- Empezamos con el icono 'inactivo' y opacidad bajita -->
+	    <i class='bx bx-filter' style="opacity: 0.5"></i> 
+	</button>
             <div class="nav-step active" onclick="app.switchView('intro')">
                 <i class='bx bx-home-alt-2 step-icon'></i>
                 <span class="step-title-mini">Inicio</span>
@@ -39,10 +43,42 @@
                     <span class="step-title">Brecha y Género</span>
                 </div>
             </div>
+		<div class="nav-connector"></div>
+		<div class="nav-step" onclick="app.switchView('cloud')">
+		    <span class="step-num">03</span>
+		    <div class="step-info">
+			<span class="step-title">Historias</span>
+			<span class="step-desc">Análisis de Texto</span>
+		    </div>
+		</div>
         </nav>
 
         <div class="dashboard-content">
-            
+            <div class="filter-bar glass-panel collapsed">
+    <div class="filter-group">
+        <label><i class='bx bx-globe'></i> País</label>
+        <select id="filter-country" onchange="app.updateFilters()">
+            <option value="All">Todos los Países</option>
+            <!-- Se llenará dinámicamente -->
+        </select>
+    </div>
+
+    <div class="filter-connector"></div>
+
+    <div class="filter-group">
+        <label><i class='bx bx-briefcase'></i> Sector</label>
+        <select id="filter-sector" onchange="app.updateFilters()">
+            <option value="All">Todos los Sectores</option>
+            <!-- Se llenará dinámicamente -->
+        </select>
+    </div>
+    
+    <div class="filter-connector"></div>
+
+    <button class="reset-btn" onclick="app.resetFilters()">
+        <i class='bx bx-reset'></i> Reset
+    </button>
+</div>
             <!-- VISTA 0: INTRODUCCIÓN (NUEVA) -->
             <section id="view-intro" class="dashboard-view active-view">
                 <div class="intro-container glass-panel">
@@ -164,7 +200,16 @@
                     </div>
                 </div>
             </section>
-
+	<section id="view-cloud" class="dashboard-view hidden-view">
+	    <div class="glass-panel cloud-area" style="height:100%; display:flex; flex-direction:column;">
+		<div class="panel-header" style="flex: 0 0 auto;">
+		    <h3><i class='bx bx-message-alt-detail'></i> Nube de Necesidades</h3>
+		    <p>Palabras más frecuentes en las descripciones de los préstamos ("Use" column).</p>
+		</div>
+		<!-- Contenedor para la nube -->
+		<div id="viz-cloud" class="chart-container" style="flex:1; width:100%; position:relative;"></div>
+	    </div>
+	</section>
         </div>
     </div>
     <script type="module" src="app.js"></script>

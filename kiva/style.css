@@ -38,6 +38,7 @@ body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh;
 
 /* --- NAVEGACIÓN --- */
 .story-nav {
+    position: relative;
     flex: 0 0 80px; /* Altura fija */
     flex-direction: row; align-items: center; justify-content: center; gap: 2rem;
 }
@@ -176,3 +177,78 @@ body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh;
 /* Iconos de Nav */
 .step-icon { font-size: 1.5rem; color: var(--accent); }
 .step-title-mini { font-weight: 700; font-size: 0.9rem; }
+
+.filter-bar {
+    position: sticky; top: 0; z-index: 50;
+    margin-bottom: var(--gap);
+    flex-direction: row; align-items: center; gap: 1rem;
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    max-height: 100px; /* Altura máxima cuando está abierto */
+    opacity: 1;
+    overflow: hidden; /* Importante para que el contenido no se salga al cerrar */
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filter-bar.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0; /* Quitamos el margen para que el contenido suba */
+    padding-top: 0;
+    padding-bottom: 0;
+    border: none;
+    pointer-events: none; /* Evita clicks cuando está invisible */
+}
+
+.filter-group {
+    display: flex; flex-direction: column; gap: 4px;
+}
+
+.filter-group label {
+    font-size: 0.75rem; color: var(--accent); font-weight: 600; text-transform: uppercase;
+}
+
+.filter-bar select {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+    color: #fff; padding: 5px 10px; border-radius: 6px;
+    font-family: inherit; font-size: 0.9rem; cursor: pointer;
+    min-width: 150px;
+}
+
+.filter-bar select:focus { outline: none; border-color: var(--accent); }
+
+.filter-connector {
+    width: 1px; height: 30px; background: rgba(255,255,255,0.1);
+}
+
+.reset-btn {
+    margin-left: auto; /* Empujar a la derecha */
+    background: transparent; border: 1px solid rgba(255,255,255,0.2);
+    color: var(--text-muted); padding: 5px 15px; border-radius: 6px;
+    cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 5px;
+}
+.reset-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.nav-toggle-btn {
+    position: absolute;
+    left: 1.5rem; /* Pegado a la izquierda */
+    top: 50%;
+    transform: translateY(-50%);
+    
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--accent);
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+    z-index: 10;
+}
+
+.nav-toggle-btn:hover {
+    background: var(--accent);
+    color: var(--bg-dark);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+}

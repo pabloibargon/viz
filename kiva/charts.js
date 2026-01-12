@@ -12,135 +12,19 @@ const COLORS = {
     povertyHigh: "#e74c3c" // MPI Alto (Rojo)
 };
 
-export async function renderMacroView(conn) {
+function buildWhereClause(filters) {
+    let clauses = ["1=1"]; // Truco: siempre verdadero para poder añadir ANDs
     
-    // 1. QUERY: Datos Agrupados por País para el Mapa
-    // Cruzamos datos de préstamos con el MPI (Índice de Pobreza) promedio del país
-    const mapQuery = `
-        SELECT 
-            country, 
-            country_code,
-            SUM(loan_amount) as total_loan, 
-            AVG(MPI) as avg_mpi, 
-            COUNT(*) as num_loans
-        FROM kiva 
-        GROUP BY country, country_code
-    `;
-    const mapData = await runQuery(conn, mapQuery);
-
-    // 2. QUERY: Top Sectores
-    const sectorQuery = `
-        SELECT sector, SUM(loan_amount) as total 
-        FROM kiva 
-        GROUP BY sector 
-        ORDER BY total DESC 
-        LIMIT 8
-    `;
-    const sectorData = await runQuery(conn, sectorQuery);
-    // Listener para el filtro
-    window.addEventListener('kiva:countryFilter', async (e) => {
-    const country = e.detail.country;
-    
-    // Si country es null, mostramos datos globales. Si tiene valor, filtramos.
-    let sql = "";
-    if (!country) {
-        // Query Global Original
-        sql = `SELECT sector, SUM(loan_amount) as total FROM kiva GROUP BY sector ORDER BY total DESC LIMIT 8`;
-    } else {
-        // Query Filtrada
-        sql = `SELECT sector, SUM(loan_amount) as total FROM kiva WHERE country = '${country}' GROUP BY sector ORDER BY total DESC LIMIT 8`;
+    if (filters.country !== 'All') {
+        clauses.push(`country = '${filters.country}'`);
     }
-
-    // Ejecutar y redibujar solo las barras
-    const newData = await runQuery(conn, sql); // Asumiendo que 'conn' es accesible o la pasas
-    drawBarChart('#viz-sectors', newData);
-});
-
-    // 3. RENDERIZAR
-    drawMap('#viz-map', mapData);
-    drawBarChart('#viz-sectors', sectorData);
+    if (filters.sector !== 'All') {
+        clauses.push(`sector = '${filters.sector}'`);
+    }
     
-    // Actualizar KPIs HTML
-    const totalMoney = d3.sum(mapData, d => d.total_loan);
-    document.getElementById('kpi-total-amount').innerText = d3.format("$,.2s")(totalMoney);
-    document.getElementById('kpi-total-countries').innerText = mapData.length;
+    return "WHERE " + clauses.join(" AND ");
 }
 
-// ============================================================================
-// VISTA 2: MICRO (Scatter y Género) - CORRECCIÓN ESPAÑOL
-// ============================================================================
-export async function renderMicroView(conn) {
-    console.log("--- DEBUG MICRO VIEW (SPANISH FIX) ---");
-
-    // 1. QUERY: Scatter Plot
-    // Mapeamos las categorías en español a 'female'/'male' para que D3 las entienda.
-    // Filtramos 'Grupo Mixto' para limpiar la comparación binaria.
-    const scatterQuery = `
-        SELECT 
-            country,
-            CASE 
-                WHEN gender_clean IN ('Mujer', 'Grupo de Mujeres') THEN 'female'
-                ELSE 'male' 
-            END as gender_unified,
-            AVG(CAST(internet_usage_pct AS FLOAT)) as internet_pct, 
-            AVG(loan_amount) as avg_amount,
-            COUNT(*) as count
-        FROM kiva 
-        WHERE internet_usage_pct IS NOT NULL 
-          AND gender_clean IN ('Mujer', 'Grupo de Mujeres', 'Hombre', 'Grupo de Hombres')
-	  AND loan_amount <= 10000
-        GROUP BY country, gender_unified
-    `;
-    
-    const scatterData = await runQuery(conn, scatterQuery);
-    console.log(`Scatter Data: ${scatterData.length} filas.`);
-
-    // 2. QUERY: Eficiencia por Género (KPIs)
-    // Misma lógica de agrupación
-    const genderQuery = `
-        SELECT 
-            CASE 
-                WHEN gender_clean IN ('Mujer', 'Grupo de Mujeres') THEN 'female'
-                ELSE 'male' 
-            END as gender_unified,
-            AVG(date_diff('day', CAST(posted_time AS TIMESTAMP), CAST(funded_time AS TIMESTAMP))) as avg_days
-        FROM kiva 
-        WHERE funded_time IS NOT NULL 
-          AND gender_clean IN ('Mujer', 'Grupo de Mujeres', 'Hombre', 'Grupo de Hombres')
-        GROUP BY gender_unified
-    `;
-    
-    const genderData = await runQuery(conn, genderQuery);
-    console.log("Gender Data:", genderData);
-
-    // 3. QUERY: Histograma (Sin cambios, usa datos generales)
-    const timeQuery = `
-        SELECT 
-            date_diff('day', CAST(posted_time AS TIMESTAMP), CAST(funded_time AS TIMESTAMP)) as days_to_fund
-        FROM kiva 
-        WHERE funded_time IS NOT NULL 
-        LIMIT 2000
-    `;
-    const timeData = await runQuery(conn, timeQuery);
-
-    // 4. RENDERIZAR
-    if (scatterData.length > 0) {
-        // Pasamos gender_unified como gender_clean al gráfico
-        const safeScatter = scatterData.map(d => ({...d, gender_clean: d.gender_unified}));
-        drawScatter('#viz-scatter', safeScatter);
-    } else {
-        console.warn("Scatter vacío. Revisa que los nombres 'Mujer', 'Hombre' coincidan exactamente en el parquet.");
-    }
-
-    if (genderData.length > 0) {
-        const safeGender = genderData.map(d => ({...d, gender_clean: d.gender_unified}));
-        drawGenderLollipops('#viz-gender', safeGender);
-    }
-
-    if (timeData.length > 0) {
-        drawTimeHistogram('#viz-time', timeData);
-    }
-}
 // ============================================================================
 // FUNCIONES DE DIBUJADO D3 (PRIVADAS DEL MÓDULO)
 // ============================================================================
@@ -624,4 +508,240 @@ function getDimensions(container) {
         width: node.clientWidth || 800, 
         height: node.clientHeight || 500 
     };
+}
+
+
+// --- FUNCIÓN DE DIBUJADO (Recibe d3Cloud como argumento) ---
+function drawWordCloud(selector, data, d3CloudLayout) {
+    const container = d3.select(selector);
+    container.html("");
+    const { width, height } = getDimensions(container);
+
+    const sizeScale = d3.scaleLinear()
+        .domain(d3.extent(data, d => d.count))
+        .range([20, 90]); // Ajustado tamaño
+
+    // Usamos d3.schemeTableau10 para colores profesionales
+    const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
+
+    const layout = d3CloudLayout()
+        .size([width, height])
+        .words(data.map(d => ({ text: d.word, size: sizeScale(d.count) })))
+        .padding(5)
+        .rotate(() => (~~(Math.random() * 2) * 90))
+        .font("Impact")
+        .fontSize(d => d.size)
+        .on("end", draw);
+
+    layout.start();
+
+    function draw(words) {
+        const svg = container.append("svg")
+            .attr("width", layout.size()[0])
+            .attr("height", layout.size()[1])
+            .append("g")
+            .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")");
+
+        const text = svg.selectAll("text")
+            .data(words)
+            .enter().append("text")
+            .style("font-size", "0px")
+            .style("font-family", "Impact, sans-serif")
+            .style("fill", (d, i) => colorScale(i))
+            .attr("text-anchor", "middle")
+            .attr("transform", d => "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")")
+            .text(d => d.text);
+
+        text.transition()
+            .duration(600)
+            .delay((d, i) => i * 10)
+            .style("font-size", d => d.size + "px")
+            .style("opacity", 1);
+            
+        text.append("title").text(d => `Frecuencia: ${Math.round(d.size)} (escala)`);
+    }
+}
+
+export async function renderMacroView(conn, filters) {
+    console.log("--- RENDER MACRO ---", filters);
+    const whereSQL = buildWhereClause(filters);
+
+    // 1. MAPA: Agrupado por país
+    const mapQuery = `
+        SELECT country, country_code, SUM(loan_amount) as total_loan, AVG(MPI) as avg_mpi 
+        FROM kiva 
+        ${whereSQL} 
+        GROUP BY country, country_code
+    `;
+    const mapData = await runQuery(conn, mapQuery);
+    
+    // Si no hay datos, limpiamos el mapa, si hay, dibujamos
+    if(mapData.length > 0) drawMap('#viz-map', mapData);
+    else d3.select('#viz-map').html("<div class='no-data'>No hay datos para estos filtros</div>");
+
+    // 2. SECTORES: Top 8
+    const sectorQuery = `
+        SELECT sector, SUM(loan_amount) as total 
+        FROM kiva 
+        ${whereSQL} 
+        GROUP BY sector 
+        ORDER BY total DESC LIMIT 8
+    `;
+    const sectorData = await runQuery(conn, sectorQuery);
+    drawBarChart('#viz-sectors', sectorData);
+    
+    // 3. KPI UPDATES (HTML)
+    // Hacemos una query ligera para los totales
+    const kpiQuery = `
+        SELECT sum(loan_amount) as total, count(DISTINCT country) as countries 
+        FROM kiva ${whereSQL}
+    `;
+    const kpiRes = await runQuery(conn, kpiQuery);
+    
+    const totalVal = kpiRes[0]?.total || 0;
+    const countriesVal = kpiRes[0]?.countries || 0;
+
+    const kpiAmountEl = document.getElementById('kpi-total-amount');
+    const kpiCountriesEl = document.getElementById('kpi-total-countries');
+    
+    if(kpiAmountEl) kpiAmountEl.innerText = d3.format("$,.2s")(totalVal);
+    if(kpiCountriesEl) kpiCountriesEl.innerText = countriesVal;
+}
+
+
+// ============================================================================
+// VISTA 2: MICRO (Scatter, Género y Tiempo)
+// ============================================================================
+export async function renderMicroView(conn, filters) {
+    console.log("--- RENDER MICRO ---", filters);
+
+    // Helper para combinar el filtro global con filtros específicos de esta vista
+    const baseWhere = buildWhereClause(filters); 
+    const combineWhere = (extra) => `${baseWhere} AND ${extra}`;
+
+    // 1. SCATTER PLOT
+    // Filtramos: Internet válido, Géneros binarios mapeados a 'female'/'male', y Outliers (>10k) fuera.
+    const scatterQuery = `
+        SELECT 
+            country,
+            CASE 
+                WHEN gender_clean IN ('Mujer', 'Grupo de Mujeres') THEN 'female'
+                ELSE 'male' 
+            END as gender_unified,
+            AVG(CAST(internet_usage_pct AS FLOAT)) as internet_pct, 
+            AVG(loan_amount) as avg_amount,
+            COUNT(*) as count
+        FROM kiva 
+        ${combineWhere("internet_usage_pct IS NOT NULL AND gender_clean IN ('Mujer', 'Grupo de Mujeres', 'Hombre', 'Grupo de Hombres') AND loan_amount <= 10000")}
+        GROUP BY country, gender_unified
+    `;
+    
+    const scatterData = await runQuery(conn, scatterQuery);
+    
+    if (scatterData.length > 0) {
+        // Mapeamos para que drawScatter reciba 'gender_clean'
+        const safeScatter = scatterData.map(d => ({...d, gender_clean: d.gender_unified}));
+        drawScatter('#viz-scatter', safeScatter);
+    } else {
+        d3.select('#viz-scatter').html("<div class='no-data'>No hay suficientes datos para correlación</div>");
+    }
+
+    // 2. GÉNERO (Lollipops)
+    const genderQuery = `
+        SELECT 
+            CASE 
+                WHEN gender_clean IN ('Mujer', 'Grupo de Mujeres') THEN 'female'
+                ELSE 'male' 
+            END as gender_unified,
+            AVG(date_diff('day', CAST(posted_time AS TIMESTAMP), CAST(funded_time AS TIMESTAMP))) as avg_days
+        FROM kiva 
+        ${combineWhere("funded_time IS NOT NULL AND gender_clean IN ('Mujer', 'Grupo de Mujeres', 'Hombre', 'Grupo de Hombres')")}
+        GROUP BY gender_unified
+    `;
+    
+    const genderData = await runQuery(conn, genderQuery);
+    if (genderData.length > 0) {
+        const safeGender = genderData.map(d => ({...d, gender_clean: d.gender_unified}));
+        drawGenderLollipops('#viz-gender', safeGender);
+    } else {
+        d3.select('#viz-gender').html("");
+    }
+
+    // 3. HISTOGRAMA (Tiempo)
+    const timeQuery = `
+        SELECT 
+            date_diff('day', CAST(posted_time AS TIMESTAMP), CAST(funded_time AS TIMESTAMP)) as days_to_fund
+        FROM kiva 
+        ${combineWhere("funded_time IS NOT NULL")}
+        LIMIT 2000
+    `;
+    const timeData = await runQuery(conn, timeQuery);
+    
+    if (timeData.length > 0) {
+        drawTimeHistogram('#viz-time', timeData);
+    } else {
+        d3.select('#viz-time').html("");
+    }
+}
+
+
+// ============================================================================
+// VISTA 3: CLOUD (Nube de Palabras)
+// ============================================================================
+export async function renderCloudView(conn, filters) {
+    console.log("--- RENDER CLOUD ---", filters);
+
+    // 1. CARGA DINÁMICA DE D3-CLOUD (Si no está cargada ya)
+    // Hacemos que d3 sea global temporalmente para que la librería legacy funcione
+    window.d3 = d3;
+    
+    // Importamos desde Skypack para asegurar compatibilidad
+    let d3Cloud;
+    try {
+        const module = await import("https://cdn.skypack.dev/d3-cloud");
+        d3Cloud = module.default;
+    } catch (e) {
+        console.error("Error cargando d3-cloud", e);
+        d3.select('#viz-cloud').html("<p style='color:red'>Error cargando librería de texto</p>");
+        return;
+    }
+
+    // 2. PREPARACIÓN NLP
+    const stopWords = [
+        'the', 'to', 'and', 'a', 'of', 'for', 'in', 'her', 'his', 'she', 'he', 
+        'with', 'is', 'that', 'on', 'as', 'at', 'by', 'this', 'from', 'it', 
+        'buy', 'purchase', 'sell', 'pay', 'loan', 'kiva', 'business', 'group',
+        'will', 'be', 'are', 'has', 'have', 'more', 'their', 'an', 'also',
+        'income', 'family', 'children', 'help', 'years', 'old', 'supplies', 's'
+    ];
+    const stopWordsSQL = stopWords.map(w => `'${w}'`).join(', ');
+
+    // 3. QUERY
+    // Aplicamos el filtro ANTES del sample para que si filtras "Construcción", 
+    // las palabras sean de construcción.
+    const whereSQL = buildWhereClause(filters);
+
+    const sql = `
+        WITH raw_words AS (
+            SELECT unnest(string_split(lower(regexp_replace(use, '[^a-z ]', '', 'g')), ' ')) as word
+            FROM kiva
+            ${whereSQL} 
+            USING SAMPLE 20% 
+        )
+        SELECT word, count(*) as count
+        FROM raw_words
+        WHERE length(word) > 3 
+          AND word NOT IN (${stopWordsSQL})
+        GROUP BY word
+        ORDER BY count DESC
+        LIMIT 100
+    `;
+
+    const cloudData = await runQuery(conn, sql);
+    
+    if (cloudData.length > 5) { // Necesitamos al menos unas pocas palabras
+        drawWordCloud('#viz-cloud', cloudData, d3Cloud);
+    } else {
+        d3.select('#viz-cloud').html("<div class='no-data'>No hay suficientes datos de texto para generar la nube.</div>");
+    }
 }
